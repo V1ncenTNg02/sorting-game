@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m json.tool)",
+      "Bash(python -m json.tool .claude/settings.json)"
+    ]
+  }
+}

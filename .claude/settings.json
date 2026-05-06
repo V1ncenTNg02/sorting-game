@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force; & '.claude\\scripts\\run-tests.ps1'",
+            "statusMessage": "Running tests...",
+            "timeout": 120
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "$t = (Get-Date).AddMinutes(-3); $p = (Test-Path 'PROMPTS.md') -and ((Get-Item 'PROMPTS.md').LastWriteTime -gt $t); $c = (Test-Path 'commit.md') -and ((Get-Item 'commit.md').LastWriteTime -gt $t); if ($p -and $c) { exit 0 } else { exit 2 }",
+            "asyncRewake": true,
+            "rewakeMessage": "You have not yet updated PROMPTS.md and commit.md for this task. Invoke the prompt-file-helper skill to log this task to PROMPTS.md, then invoke the commit-file-helper skill to update commit.md.",
+            "rewakeSummary": "Skills pending — updating PROMPTS.md and commit.md",
+            "statusMessage": "Checking skill logs..."
+          }
+        ]
+      }
+    ]
+  }
+}
