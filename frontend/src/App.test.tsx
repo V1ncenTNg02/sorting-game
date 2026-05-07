@@ -125,7 +125,7 @@ describe('App — sharing link', () => {
     expect(loadSharedGame).not.toHaveBeenCalled()
   })
 
-  it('renders Well Done modal with shared game duration when sharedGame is completed', () => {
+  it('renders shared result modal with shared game duration when sharedGame is completed', () => {
     vi.stubGlobal('location', { search: '?session=shared-abc', origin: 'http://localhost:5173' })
     const sharedGame: ApiGame = {
       id: 'shared-abc',
@@ -137,7 +137,7 @@ describe('App — sharing link', () => {
     }
     setupStore({ status: 'playing', sharedGame })
     render(<App />)
-    expect(screen.getByText(/well done/i)).toBeInTheDocument()
+    expect(screen.getByText(/shared result/i)).toBeInTheDocument()
     expect(screen.getByText('00:30')).toBeInTheDocument()
   })
 
@@ -153,7 +153,7 @@ describe('App — sharing link', () => {
     }
     setupStore({ status: 'idle', sharedGame })
     render(<App />)
-    expect(screen.getByText(/well done/i)).toBeInTheDocument()
+    expect(screen.getByText(/shared result/i)).toBeInTheDocument()
     expect(screen.getByText('00:28')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /start game/i })).not.toBeInTheDocument()
   })
