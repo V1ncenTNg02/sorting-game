@@ -1268,3 +1268,28 @@ Functionality or logic after change:
 - `[DragDrop] hovering over bucket: <id> <label>` fires each time a dragged shape enters a bucket's droppable zone.
 - `[DragDrop] drag cancelled: <id> <shape> <colour>` fires when the user abandons a drag.
 - Every required mouse-event category (start, over, cancel, end/drop) now produces console output.
+
+### Task: Consolidate Task 8 commit.md entries with full "how added" and "how tested" answers
+
+Prompts:
+```text
+How you and where you added Debug elements into your code
+• How you tested it (eg: Opened Google Chrome > Inspect > Console)
+
+Have These two questions be answered in the commit.md file.
+```
+
+Outcome:
+- Merged both Task 8 commit.md sections into one consolidated entry.
+- Added explicit "How debug elements were added" section listing every `console.debug` call by file, method, and exact log message, plus the wiring chain from `DragDropService` → `useGameStore` → `GameBoard` → `App`.
+- Added explicit "How I tested it" section with a numbered manual walkthrough: Chrome → DevTools → Verbose log level → Start Game → drag start → hover → cancel → correct drop → wrong drop → completion.
+- Output used fully.
+
+Code edited:
+- commit.md
+
+Functionality or logic before change:
+- No functionality changed. Documentation update only.
+
+Functionality or logic after change:
+- No code changed. commit.md now contains clear answers to both required Task 8 documentation questions.
