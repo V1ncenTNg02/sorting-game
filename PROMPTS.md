@@ -681,3 +681,58 @@ Functionality or logic before change:
 
 Functionality or logic after change:
 - Buckets are 7 shape+colour combinations listed in a narrow sidebar as droppable target rows. Drop validation requires exact shape and colour match; wrong drops return item to board. Timer ticks every second from game start and stops on completion. Shapes are outlined SVGs (stroke only). Items are scattered at fixed percentage positions across the canvas. Layout matches the reference image: top bar (time/items-left/reset), sidebar (drop targets with count badges), main board (heading, instruction, canvas with scattered items and ghost grid), footer (bucket count, system status). 54/54 tests passing.
+
+## Task 2 - Docker Setup
+
+### Task: Plan and implement Docker Compose setup for frontend, backend, and PostgreSQL
+
+Prompts:
+```text
+2) Docker Setup (Frontend + Backend + Database)
+Create a Docker Compose setup with:
+• Frontend service
+• Backend service
+• PostgreSQL database
+Ensure services can communicate.
+...
+This is the requirements for task 2. Draft a plan for task 2, wait for me to review it, and implement it once I confirm.
+```
+
+```text
+update the plan to only include /health endpoint in it to test the connection between frontend, backend and DB. Don't build other endpoints at this point yet.
+```
+
+Outcome:
+- Created `backend/` scaffold: `DatabaseConnection` class (pg.Pool singleton), `HealthController`, `GET /health` route, Express entry point (`index.ts`).
+- Created `database/init/01_schema.sql` with `scores` and `games` tables; PostgreSQL auto-executes on first start via `/docker-entrypoint-initdb.d/`.
+- Created `backend/Dockerfile` and `frontend/Dockerfile` (both `node:20-alpine`, dev-mode, hot reload via volume mounts).
+- Created `docker-compose.yml` with three services (`db`, `backend`, `frontend`) on a shared network, `depends_on` with `service_healthy` ordering, named `postgres_data` volume.
+- Updated `frontend/vite.config.ts` with `server.host: '0.0.0.0'`, `server.hmr.clientPort: 5173`, and `/api` proxy to `VITE_API_TARGET`.
+- Fixed `frontend/package.json` by removing `@rolldown/binding-win32-x64-msvc` (Windows-only native binary that hard-fails `npm install` on Linux in Docker; Vite manages platform bindings internally).
+- Created `.env.example` and root `.gitignore`.
+- All three containers verified healthy; `GET /health` → `{"status":"ok","db":"connected"}`; frontend serves HTTP 200; DB tables confirmed with `\dt`.
+- Output was used fully.
+
+Code edited:
+- backend/package.json (new)
+- backend/tsconfig.json (new)
+- backend/src/index.ts (new)
+- backend/src/config/database.ts (new)
+- backend/src/controllers/HealthController.ts (new)
+- backend/src/routes/health.ts (new)
+- backend/Dockerfile (new)
+- backend/.dockerignore (new)
+- frontend/Dockerfile (new)
+- frontend/.dockerignore (new)
+- frontend/package.json (removed Windows-only rolldown binding)
+- frontend/vite.config.ts (added server config: host, hmr, proxy)
+- database/init/01_schema.sql (new)
+- docker-compose.yml (new)
+- .env.example (new)
+- .gitignore (new)
+
+Functionality or logic before change:
+- No backend existed. No Docker infrastructure. Vite dev server only accessible on localhost, no API proxy configured.
+
+Functionality or logic after change:
+- All three services run in containers via `docker compose up --build`. Backend connects to PostgreSQL and reports `{"status":"ok","db":"connected"}` on `GET /health`. Frontend Vite dev server proxies `/api/*` calls server-side to the backend container using Docker's internal DNS. Database schema (`scores`, `games` tables) auto-initialised on first start.

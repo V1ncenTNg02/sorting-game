@@ -8,8 +8,8 @@ Colour and shape sorting game built for the Unify Services coding test.
 - Backend: Node.js + TypeScript
 - Database: PostgreSQL
 - Infrastructure: Docker + Docker Compose
-- Frontend state management: TODO
-- Testing: TODO
+- Frontend state management: Zustand
+- Testing: Vitest + React Testing Library (frontend), Jest + Supertest (backend, planned)
 
 ## Why This Stack
 
@@ -35,11 +35,59 @@ Required behaviour:
 
 ## Running the Project
 
-TODO
+### With Docker (recommended)
+
+Requires Docker Desktop running.
+
+```bash
+docker compose up --build
+```
+
+- Frontend: http://localhost:5173
+- Backend health: http://localhost:3000/health
+- PostgreSQL: localhost:5432
+
+Stop all services:
+```bash
+docker compose down
+```
+
+Stop and remove the database volume (fresh start):
+```bash
+docker compose down -v
+```
+
+### Local development (without Docker)
+
+Run PostgreSQL separately, then:
+
+```bash
+# Backend
+cd backend
+npm install
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/sorting_game npm run dev
+
+# Frontend (separate terminal)
+cd frontend
+npm install
+npm run dev
+```
 
 ## Docker
 
-TODO
+Three services defined in `docker-compose.yml`:
+
+| Service | Image | Port | Notes |
+|---------|-------|------|-------|
+| `db` | postgres:16-alpine | 5432 | Named volume `postgres_data`; schema auto-loaded from `database/init/` |
+| `backend` | node:20-alpine | 3000 | Express + TypeScript, `tsx watch` for hot reload |
+| `frontend` | node:20-alpine | 5173 | Vite dev server, proxies `/api/*` to backend |
+
+**Communication:** Browser → Vite dev server (`:5173`) → proxy `/api/*` → backend (`:3000`) → PostgreSQL (`:5432`). All inter-container traffic uses Docker's internal DNS (`db`, `backend`).
+
+**Environment variables:** Set inline in `docker-compose.yml`. See `.env.example` for local (non-Docker) values.
+
+**Hot reload:** Both frontend and backend bind-mount source directories into the container with anonymous `node_modules` volumes, so local edits are reflected immediately without rebuilding the image.
 
 ## Migrations
 
@@ -51,7 +99,7 @@ TODO
 
 ## API Endpoints
 
-TODO
+`GET /health` is live. Remaining endpoints are planned for Task 4.
 
 Expected endpoints:
 - `GET /health`
@@ -65,15 +113,24 @@ Expected endpoints:
 
 ## Database Schema
 
-TODO
+Managed by `database/init/01_schema.sql`, auto-executed by PostgreSQL on first container start.
 
-Expected tables:
-- `scores`
-- `games`
+```sql
+scores (id SERIAL PK, value INTEGER, recorded_at TIMESTAMPTZ)
+games  (id UUID PK, items JSONB, duration_ms INTEGER, completed BOOLEAN, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ)
+```
 
 ## State Management
 
-TODO
+Zustand store (`frontend/src/store/useGameStore.ts`) holds all core game truth:
+- `status` — idle / playing / complete
+- `unsortedItems` — items not yet sorted
+- `buckets` — bucket definitions and assignments
+- `elapsedSeconds` — timer
+- `bestScore` — fetched from backend
+- `sessionId` — current game session
+
+Short-lived visual state (hover, animation flags) is kept local to components.
 
 ## Debugging
 

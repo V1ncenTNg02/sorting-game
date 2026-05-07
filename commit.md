@@ -227,28 +227,54 @@ npm run build
 
 ## Task 2 - Docker Setup
 
-Commit:
-- Pending
+**What was done:**
+- Created `backend/` with a minimal Express + TypeScript scaffold: `DatabaseConnection` singleton (wraps `pg.Pool`), `HealthController` (calls `DatabaseConnection.healthCheck()`), a `GET /health` route, and `src/index.ts` bootstrapping the Express app.
+- Created `database/init/01_schema.sql` with `scores` and `games` tables; PostgreSQL auto-runs all `.sql` files placed in `/docker-entrypoint-initdb.d/` on first start.
+- Created `backend/Dockerfile` and `frontend/Dockerfile` — both use `node:20-alpine` with development-mode startup (`tsx watch` for backend, `vite` dev server for frontend). No production build step; hot reload works in both containers via bind-mounted volume.
+- Created `.dockerignore` for both services (`node_modules`, `dist`, `.env`, logs).
+- Created `docker-compose.yml` at project root defining three services: `db` (postgres:16-alpine), `backend` (depends on `db` via `service_healthy`), `frontend` (depends on `backend`).
+- Named volume `postgres_data` keeps database state between `docker compose down` / `up` cycles.
+- Updated `frontend/vite.config.ts` to add `server.host: '0.0.0.0'` (container accessible), `server.hmr.clientPort: 5173` (HMR through Docker port mapping), and `server.proxy: { '/api': VITE_API_TARGET }` so the Vite dev server proxies API calls server-side to the backend container.
+- Created `.env.example` and root `.gitignore` (covers `.env`, `node_modules`, `dist`, logs).
 
-What I did:
-- TODO
+**Service structure:**
+Three Docker Compose services on a shared auto-created network:
+- `db` — PostgreSQL 16 with healthcheck (`pg_isready`); volume-mounts `database/init/` to `/docker-entrypoint-initdb.d/` for automatic schema creation.
+- `backend` — Express + TypeScript, `tsx watch` for hot reload; volume-mounts `./backend:/app` with an anonymous `/app/node_modules` volume so Linux node_modules are not overridden by the Windows host's `node_modules`.
+- `frontend` — Vite dev server; same volume pattern.
 
-Decisions:
-- Service structure: TODO.
-- Environment variables: TODO.
-- Container communication: TODO.
-- Database connection verification: TODO.
+**Environment variables:**
+- Docker Compose sets all env vars inline in `docker-compose.yml` — no `.env` file required to run.
+- `DATABASE_URL` in backend container uses Docker's internal DNS (`db:5432`); locally it maps to `localhost:5432`.
+- `VITE_API_TARGET` in frontend container is `http://backend:3000` — consumed by Vite's server-side proxy; the browser only ever sees relative `/api/*` paths. Locally it falls back to `http://localhost:3000` via `?? 'http://localhost:3000'` in `vite.config.ts`.
+- `.env.example` documents the local (non-Docker) values.
 
-Tradeoffs:
-- TODO
+**Container communication:**
+- Browser → `localhost:5173` → Vite dev server (frontend container)
+- Vite proxy intercepts `/api/*` → `http://backend:3000` (Docker internal DNS, server-side, not browser-side)
+- Backend → `postgresql://postgres:postgres@db:5432/sorting_game` (Docker internal DNS)
+- `depends_on` with `condition: service_healthy` ensures `db` is accepting connections before `backend` starts, and `backend` is up before `frontend` starts.
 
-Problems encountered:
-- TODO
+**Problems encountered:**
+- `@rolldown/binding-win32-x64-msvc` was listed as a direct dependency in `frontend/package.json` (auto-added by npm when Vite was installed on Windows). npm hard-fails with `EBADPLATFORM` when building the Linux Docker image because the package declares `os: ["win32"]`. Fixed by removing it from `package.json`; Vite manages platform-specific Rolldown bindings internally and works correctly on both platforms without the explicit entry.
 
-Terminal commands used:
+**Terminal commands used:**
 ```powershell
-TODO
+docker compose build
+docker compose up -d
+docker compose ps
+curl http://localhost:3000/health
+curl -s -o /dev/null -w "%{http_code}" http://localhost:5173
+docker compose exec db psql -U postgres -d sorting_game -c "\dt"
+docker compose logs backend
 ```
+
+**Verification:**
+- `docker compose ps` — all three containers up, `db` shows `(healthy)`.
+- `GET /health` → `{"status":"ok","db":"connected"}` — backend confirmed connected to PostgreSQL.
+- `GET http://localhost:5173` → HTTP 200 — Vite dev server running in container.
+- `\dt` in PostgreSQL → `games` and `scores` tables present.
+- Backend logs → `Backend running on port 3000`, no errors.
 
 ## Task 3 - Database Migrations
 
