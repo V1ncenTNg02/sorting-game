@@ -10,7 +10,23 @@
       "Bash(Remove-Item -Recurse -Force node_modules, package-lock.json -ErrorAction SilentlyContinue)",
       "Bash(npm remove *)",
       "Bash(npm run *)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
+      "Bash(docker compose *)",
+      "Bash(Start-Process \"C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe\" -ErrorAction SilentlyContinue)",
+      "Bash(Start-Sleep -Seconds 30)",
+      "Bash(docker info *)",
+      "Bash(Select-Object -First 5)",
+      "PowerShell(Start-Process \"C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe\" -ErrorAction SilentlyContinue)",
+      "PowerShell(docker info 2>&1)",
+      "Bash(curl -s http://localhost:3000/health)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(powershell -ExecutionPolicy Bypass -File .claude/scripts/run-tests.ps1)",
+      "Bash(Remove-Item -Force \".claude/.last-test-run\" -ErrorAction SilentlyContinue)",
+      "Bash(powershell -ExecutionPolicy Bypass -Command \"Set-Location 'e:\\\\GitProject\\\\sorting-game'; & '.claude\\\\scripts\\\\run-tests.ps1'\")",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }
