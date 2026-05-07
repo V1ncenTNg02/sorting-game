@@ -645,6 +645,32 @@ cd backend && npm run test:coverage
 # → 27 passed; 98.38% stmts / 91.66% branches backend
 ```
 
+## Task 7 — Commit message drafted
+
+Commit:
+- N/A — documentation task, no new commit.
+
+**What was done:**
+- Reviewed the single commit on feat/task-7-test-business-rules via git log.
+- Drafted an alternative consolidated commit message suitable for a PR description or squash commit, covering all 27 backend and 108 frontend tests and both coverage scripts.
+
+**Decisions made:**
+- N/A
+
+**Tradeoffs:**
+- N/A
+
+**Problems encountered:**
+- None.
+
+**Terminal commands used:**
+```powershell
+git log --oneline feat/task-7-test-business-rules ^main
+```
+
+**Verification:**
+- N/A
+
 ## Task 8 - Debug Output and Screenshots
 
 Commit:
