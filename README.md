@@ -62,17 +62,27 @@ The app is a colour and shape sorting game. A player starts a game, drags items 
 
 ### Items
 
-- 12 items generated at the start of each game
+- 15 items generated at the start of each game
 - Shapes: `triangle`, `square`, `circle`
 - Colours: `red`, `green`, `blue`
 
 ### Buckets
 
-Six sorting buckets are displayed: one per shape and one per colour.
+Seven sorting buckets are displayed, each defined by a specific shape and colour combination:
+
+| Bucket | Shape | Colour |
+|---|---|---|
+| Red Triangle | triangle | red |
+| Red Square | square | red |
+| Blue Triangle | triangle | blue |
+| Blue Circle | circle | blue |
+| Green Triangle | triangle | green |
+| Green Square | square | green |
+| Blue Square | square | blue |
 
 ### Drop rules
 
-- A drop is correct if the item's shape matches the bucket's shape, or the item's colour matches the bucket's colour.
+- A drop is correct only if the item's shape **and** colour both match the target bucket exactly.
 - Correct drops are accepted and stay in the bucket.
 - Incorrect drops are rejected and the item returns to the unsorted area.
 
@@ -86,7 +96,7 @@ Six sorting buckets are displayed: one per shape and one per colour.
 
 - A Well Done modal appears when all items are sorted.
 - The modal displays the completion time and the best score.
-- A share link is generated from the session UUID (`?game=<uuid>`). Opening the link restores the completed game state.
+- A share link is generated from the session UUID (`?session=<uuid>`). Opening the link restores the completed game state.
 
 ### Persistence
 
@@ -269,15 +279,15 @@ All endpoints are live. The base URL in Docker is `http://localhost:3000`.
 `POST /api/best-score` request body:
 
 ```json
-{ "value": 42 }
+{ "value": 42000 }
 ```
 
-`value` is the completion time in seconds (positive integer).
+`value` is the completion time in milliseconds (positive integer).
 
 Responses:
 
 ```json
-{ "accepted": true, "score": { "id": 1, "value": 42, "recordedAt": "2025-01-01T00:00:00Z" } }
+{ "accepted": true, "score": { "id": 1, "value": 42000, "recordedAt": "2025-01-01T00:00:00Z" } }
 { "accepted": false, "reason": "New score is not lower than the current best." }
 ```
 
@@ -353,7 +363,7 @@ CREATE TABLE scores (
 );
 ```
 
-`value` stores the completion time in seconds. The best-score business rule (only accept a lower value) is enforced at the service layer, not at the database level, so the history of all submitted scores is preserved.
+`value` stores the completion time in milliseconds. The best-score business rule (only accept a lower value) is enforced at the service layer, not at the database level, so the history of all submitted scores is preserved.
 
 ### `games`
 
@@ -384,12 +394,12 @@ All core game truth lives in a single Zustand store at [frontend/src/store/useGa
 |---|---|---|
 | `status` | `'loading' \| 'idle' \| 'playing' \| 'complete'` | Current game phase |
 | `unsortedItems` | `ShapeItem[]` | Items not yet correctly placed |
-| `buckets` | `Bucket[]` | Bucket definitions (shape or colour) |
+| `buckets` | `Bucket[]` | Bucket definitions (each is a specific shape and colour combination) |
 | `bucketCounts` | `Record<string, number>` | Accepted drop count per bucket |
 | `elapsedSeconds` | `number` | Timer value; increments every second while `playing` |
 | `sessionId` | `string \| null` | UUID of the active game session from `POST /api/games` |
 | `bestScore` | `number \| null` | Best completion time in seconds; loaded from API on mount |
-| `sharedGame` | `ApiGame \| null` | Populated when a `?game=<id>` query param is present |
+| `sharedGame` | `ApiGame \| null` | Populated when a `?session=<id>` query param is present |
 
 ### State transitions
 

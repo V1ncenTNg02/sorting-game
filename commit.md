@@ -193,7 +193,7 @@ npm run dev
 - New components: `TopBar` (elapsed time, items left, reset button), `SidebarTarget` (droppable bucket row with outlined icon, label, and count badge), `GhostGrid` (faint 4×2 decorative grid in canvas bottom-right), `Footer` (bucket count, system status).
 - `GameBoard` completely rewritten: full-page flex layout with `TopBar` → sidebar + canvas → `Footer`, with `DndContext` wrapping everything.
 - Removed `BucketZone` as the active drop-target component; replaced by `SidebarTarget`. Old `Bucket.test.tsx` updated to test `SidebarTarget` instead.
-- Added `console.debug` logging for drag events, drop validation result, and game state changes (satisfies the debugging requirement).
+- Added `console.log` logging for drag events, drop validation result, and game state changes (satisfies the debugging requirement).
 
 **Decisions made:**
 - Buckets as shape+colour combos rather than separate categories is both closer to the coding test requirement and matches the reference image exactly.
@@ -451,7 +451,7 @@ Commit:
 
 **How API calls are structured:**
 - `ApiService` is a class with four public methods: `getBestScore`, `createGame`, `completeGame`, `submitScore`. Each delegates to a private HTTP helper (`get`, `post`, `patch`) that uses the native `fetch` API with relative paths.
-- All successful responses call `console.debug('[Api] ...')` to satisfy the CLAUDE.md debug output requirement.
+- All successful responses call `console.log('[Api] ...')` to satisfy the CLAUDE.md debug output requirement.
 - `getBestScore` returns `null` on any failure (404, network error, 5xx) — graceful degradation.
 - `createGame`, `completeGame`, `submitScore` throw on non-2xx; callers catch and log without blocking gameplay.
 
@@ -679,7 +679,7 @@ Commits:
 
 **How debug elements were added:**
 
-All debug logging uses `console.debug` so it filters cleanly below `console.log` in production and is visible in Chrome DevTools when the log level is set to Verbose.
+All debug logging uses `console.log`, visible in Chrome DevTools at the default log level without any filter changes.
 
 _Drag events — `frontend/src/services/DragDropService.ts`_
 - `handleDragStart(event, unsortedItems)` — called by dnd-kit's `onDragStart`; looks up the active item by id and logs `[DragDrop] drag started: <id> <shape> <colour>`.
@@ -699,7 +699,7 @@ _Game state — `frontend/src/store/useGameStore.ts`_
 - `setTimeout` restore block → `[Game] restored from localStorage, elapsed: <seconds>`
 
 _API responses — `frontend/src/services/ApiService.ts`_
-- Every HTTP call resolves through `logResponse(label, data)` which calls `console.debug(label, data)` with the full server response object:
+- Every HTTP call resolves through `logResponse(label, data)` which calls `console.log(label, data)` with the full server response object:
   - `GET /api/best-score` → `[Api] best-score: <ApiScore>`
   - `POST /api/games` → `[Api] game created: <ApiGame>`
   - `PATCH /api/games/:id` → `[Api] game updated: <ApiGame>`
@@ -715,11 +715,11 @@ _Wiring the drag handlers through the stack:_
 
 _Automated tests:_
 - Ran `npm test -- --run` in `frontend/` — 117/117 tests pass.
-- `DragDropService.test.ts` has dedicated tests for every handler: `handleDragStart` (2 tests), `handleDragOver` (4 tests), `handleDragCancel` (2 tests), `handleDragEnd` (7 tests). Each test spies on `console.debug` and asserts the exact message and arguments.
+- `DragDropService.test.ts` has dedicated tests for every handler: `handleDragStart` (2 tests), `handleDragOver` (4 tests), `handleDragCancel` (2 tests), `handleDragEnd` (7 tests). Each test spies on `console.log` and asserts the exact message and arguments.
 
 _Manual browser verification:_
 1. Opened Google Chrome and navigated to `http://localhost:5173`.
-2. Opened DevTools → Console tab → set log level to **Verbose** (to show `console.debug` output).
+2. Opened DevTools → Console tab — all output is visible at the default log level.
 3. Clicked **Start Game** — observed `[Api] best-score:`, `[Game] started —`, `[Api] game created:`, `[Game] session created:` in the console.
 4. Picked up a shape — observed `[DragDrop] drag started:` immediately.
 5. Hovered the shape over a bucket — observed `[DragDrop] hovering over bucket:`.
@@ -737,7 +737,7 @@ _Manual browser verification:_
 
 **Tradeoffs:**
 - `onDragOver` can fire many times as the pointer moves within a zone, but dnd-kit fires the callback only on droppable-id transitions (enter/leave), not on raw pointer moves — one log per bucket entry in practice.
-- `console.debug` calls remain in the production bundle; they are suppressed by the browser's default log filter but are not tree-shaken.
+- `console.log` calls remain in the production bundle and are always visible; they are not tree-shaken.
 
 **Problems encountered:**
 - Initial implementation of `createGame`, `completeGame`, and `getGame` in `ApiService` logged only partial data (id string or a constructed object). Fixed by passing the full response object to `logResponse`.
@@ -777,25 +777,3 @@ Problems encountered:
 Terminal commands used:
 - None. README written using Claude Code file tools only.
 
-## Task 10 - Git Hosting
-
-Commit:
-- Pending
-
-What I did:
-- TODO
-
-Decisions:
-- Remote hosting choice: TODO.
-- Feature branch name: TODO.
-
-Tradeoffs:
-- TODO
-
-Problems encountered:
-- TODO
-
-Terminal commands used:
-```powershell
-TODO
-```

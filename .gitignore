@@ -14,3 +14,10 @@ npm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Test coverage reports
+coverage/
+
+# Claude Code local state
+.claude/.last-test-run
+.claude/settings.local.json
