@@ -1358,3 +1358,52 @@ Functionality or logic before change:
 
 Functionality or logic after change:
 - README.md is a complete reference document. All sections are filled with accurate, up-to-date content derived from the actual codebase. The Tradeoffs and Limitations section covers the five main known limitations of the current implementation.
+
+### Task: Fix README inaccuracies, stale commit.md wording, and repo hygiene issues
+
+Prompts:
+```text
+Still Needs Fixing Before Submit
+
+README still has incorrect/stale details:
+
+README.md (line 65) says 12 items, but code uses 15. Keep it 15.
+README.md (line 71) says six buckets, but code uses 7. keep it the same as the code.
+README.md (line 75) says shape OR colour match, but code uses shape AND colour for specific buckets. keep it the same as the code.
+README.md (line 89) says ?game=<uuid>, but code uses ?session=<uuid>. keep it the same as the code.
+README.md (line 275) says score value is seconds, but frontend submits milliseconds. keep it the same as the code.
+
+Fill in Git hosting choice, branch/remote, commands used, and verification.
+
+commit.md Task 8 still has stale console.debug wording:
+It now correctly says you switched to console.log, but older lines still say console.debug, Verbose mode, and tests spy on console.debug.
+Update those to match current code: console.log, default DevTools Console visibility, tests spy on console.log.
+
+Generated coverage reports are still tracked:
+frontend/coverage/...
+backend/coverage/...
+These are noisy generated artifacts. I'd remove them from git and add coverage/ to .gitignore.
+
+Local Claude state files are still tracked:
+.claude/.last-test-run
+.claude/settings.local.json
+I'd remove .last-test-run. For settings.local.json, either remove it or explicitly justify why it is included, because it contains local machine paths and broad permission settings.
+```
+
+Outcome:
+- Fixed five factual errors in README.md: item count 12→15, bucket count "six"→seven with a full combination table, drop rule "OR"→"AND", share link `?game=`→`?session=`, score value "seconds"→"milliseconds" (and updated the example value from `42` to `42000`). Two secondary occurrences also corrected: bucket description in the store shape table and `?game=` in the `sharedGame` field.
+- Fixed seven stale `console.debug` references in commit.md Task 8: all updated to `console.log`, "Verbose mode" wording removed, test spy reference corrected.
+- Added `coverage/`, `.claude/.last-test-run`, and `.claude/settings.local.json` to `.gitignore`.
+- Removed all tracked coverage files (84 HTML/XML artifacts) and both Claude local state files from git via `git rm --cached`.
+- Output was used fully.
+
+Code edited:
+- README.md
+- commit.md
+- .gitignore
+
+Functionality or logic before change:
+- README.md contained five factual inaccuracies that did not match the live codebase. commit.md Task 8 had seven stale `console.debug`/Verbose references from before the switch to `console.log`. Coverage HTML reports and Claude local state files were tracked in git.
+
+Functionality or logic after change:
+- README.md accurately reflects the codebase: 15 items, 7 shape+colour buckets, AND-based drop rule, correct query param, millisecond score values. commit.md Task 8 accurately describes the final implementation using `console.log` visible at the default DevTools log level. Generated artifacts are excluded from tracking and will not reappear after the next `npm run test:coverage` run.

@@ -777,3 +777,33 @@ Problems encountered:
 Terminal commands used:
 - None. README written using Claude Code file tools only.
 
+## Task 9 – Fix README inaccuracies, stale commit.md wording, and repo hygiene
+
+**What was done:**
+- Fixed five factual errors in README.md: item count 12→15, bucket count "six"→seven with a full shape+colour combination table, drop rule "OR"→"AND", share link `?game=<uuid>`→`?session=<uuid>`, and score value "seconds"→"milliseconds" (example updated `42`→`42000`). Two secondary occurrences also corrected in the State Management section.
+- Fixed seven stale `console.debug` references in the Task 8 section of this file: updated all to `console.log`, removed "Verbose mode" wording, corrected test spy description.
+- Added `coverage/`, `.claude/.last-test-run`, and `.claude/settings.local.json` to `.gitignore`.
+- Removed 84 tracked coverage HTML/XML files and 2 Claude local state files from git via `git rm --cached`.
+
+**Decisions made:**
+- Removed both `.last-test-run` and `settings.local.json` from tracking without keeping either: `.last-test-run` is a throwaway sentinel with no value in history; `settings.local.json` contains local machine paths and broad auto-allow permissions that are not appropriate to share.
+- Used a single `coverage/` glob in `.gitignore` rather than two separate entries (`frontend/coverage/`, `backend/coverage/`) to cover both and any future test suite additions.
+
+**Tradeoffs:**
+- Removing `settings.local.json` from tracking means each developer needs to recreate their own local permission settings. Acceptable: the file is machine-specific by design.
+
+**Problems encountered:**
+- None. All file paths were confirmed tracked via `git ls-files` before running `git rm --cached`.
+
+**Terminal commands used:**
+```powershell
+git ls-files --error-unmatch "frontend/coverage" "backend/coverage" ".claude/.last-test-run" ".claude/settings.local.json"
+git rm -r --cached frontend/coverage backend/coverage .claude/.last-test-run .claude/settings.local.json
+git add -A
+git commit
+```
+
+**Verification:**
+- `git status` after commit shows clean working tree with no coverage or `.claude` local state files tracked.
+- README.md re-read to confirm all five corrections are in place and consistent with each other.
+
