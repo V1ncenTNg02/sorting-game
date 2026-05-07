@@ -1,0 +1,30 @@
+interface Props {
+  elapsedSeconds: number
+  onReset: () => void
+}
+
+function formatTime(seconds: number): string {
+  const mm = String(Math.floor(seconds / 60)).padStart(2, '0')
+  const ss = String(seconds % 60).padStart(2, '0')
+  return `${mm}:${ss}`
+}
+
+export function WellDoneModal({ elapsedSeconds, onReset }: Props) {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl shadow-xl p-10 flex flex-col items-center gap-6 max-w-sm w-full mx-4">
+        <h2 className="text-3xl font-bold text-gray-800">Well Done!</h2>
+        <p className="text-gray-500">You sorted everything in</p>
+        <span className="text-4xl font-mono font-semibold text-blue-600">
+          {formatTime(elapsedSeconds)}
+        </span>
+        <button
+          onClick={onReset}
+          className="mt-2 px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors"
+        >
+          Play Again
+        </button>
+      </div>
+    </div>
+  )
+}
