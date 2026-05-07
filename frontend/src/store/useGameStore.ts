@@ -82,7 +82,7 @@ export const useGameStore = create<GameStore>(set => ({
     const score = await apiService.getBestScore()
     const bestScore = score !== null ? Math.round(score.value / 1000) : null
     set({ bestScore })
-    console.debug('[Game] best score loaded:', bestScore)
+    console.log('[Game] best score loaded:', bestScore)
   },
 
   async startGame() {
@@ -102,14 +102,14 @@ export const useGameStore = create<GameStore>(set => ({
       sharedGame: null,
     })
     startTimer()
-    console.debug('[Game] started — items:', ITEM_COUNT_LOG, 'buckets:', buckets.length)
+    console.log('[Game] started — items:', ITEM_COUNT_LOG, 'buckets:', buckets.length)
 
     try {
       const game = await apiService.createGame(items)
       set({ sessionId: game.id })
-      console.debug('[Game] session created:', game.id)
+      console.log('[Game] session created:', game.id)
     } catch (err) {
-      console.debug('[Game] session create failed (offline):', err)
+      console.log('[Game] session create failed (offline):', err)
     }
   },
 
@@ -131,8 +131,8 @@ export const useGameStore = create<GameStore>(set => ({
       const result = dragDropService.handleDragEnd(event, state.unsortedItems, state.buckets)
       if (!result) return state
 
-      console.debug('[Game] drop result:', result.accepted ? 'accepted' : 'rejected')
-      console.debug('[Game] state — unsorted:', result.updatedUnsorted.length)
+      console.log('[Game] drop result:', result.accepted ? 'accepted' : 'rejected')
+      console.log('[Game] state — unsorted:', result.updatedUnsorted.length)
 
       if (!result.accepted) return state
 
@@ -146,7 +146,7 @@ export const useGameStore = create<GameStore>(set => ({
       if (isComplete) {
         clearTimer()
         localStorageService.clear()
-        console.debug('[Game] complete! elapsed:', state.elapsedSeconds)
+        console.log('[Game] complete! elapsed:', state.elapsedSeconds)
         void handleGameCompletion(state.elapsedSeconds)
       } else {
         localStorageService.save({
@@ -184,20 +184,20 @@ export const useGameStore = create<GameStore>(set => ({
       sharedGame: null,
     })
     startTimer()
-    console.debug('[Game] reset')
+    console.log('[Game] reset')
 
     void apiService.createGame(items)
       .then(game => useGameStore.setState({ sessionId: game.id }))
-      .catch(err => console.debug('[Game] reset session create failed (offline):', err))
+      .catch(err => console.log('[Game] reset session create failed (offline):', err))
   },
 
   async loadSharedGame(id: string) {
     try {
       const game = await apiService.getGame(id)
       set({ sharedGame: game })
-      console.debug('[Game] shared game loaded:', game?.id ?? 'not found')
+      console.log('[Game] shared game loaded:', game?.id ?? 'not found')
     } catch (err) {
-      console.debug('[Game] shared game load failed:', err)
+      console.log('[Game] shared game load failed:', err)
       set({ sharedGame: null })
     }
   },
@@ -213,20 +213,20 @@ async function handleGameCompletion(elapsedSeconds: number): Promise<void> {
   if (sessionId !== null) {
     try {
       await apiService.completeGame(sessionId, durationMs, unsortedItems)
-      console.debug('[Game] session completed:', sessionId)
+      console.log('[Game] session completed:', sessionId)
     } catch (err) {
-      console.debug('[Game] session complete failed (offline):', err)
+      console.log('[Game] session complete failed (offline):', err)
     }
   }
 
   try {
     const result = await apiService.submitScore(durationMs)
-    console.debug('[Game] score result:', result)
+    console.log('[Game] score result:', result)
     if (result.accepted && result.score) {
       useGameStore.setState({ bestScore: Math.round(result.score.value / 1000) })
     }
   } catch (err) {
-    console.debug('[Game] score submit failed (offline):', err)
+    console.log('[Game] score submit failed (offline):', err)
   }
 }
 
@@ -244,7 +244,7 @@ setTimeout(() => {
       sessionId: saved.sessionId,
     })
     startTimer()
-    console.debug('[Game] restored from localStorage, elapsed:', saved.elapsedSeconds)
+    console.log('[Game] restored from localStorage, elapsed:', saved.elapsedSeconds)
   } else {
     useGameStore.setState({ status: 'idle' })
   }

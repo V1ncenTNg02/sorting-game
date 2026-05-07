@@ -14,7 +14,7 @@ export class DragDropService {
     const activeId = String(event.active.id)
     const item = unsortedItems.find(i => i.id === activeId)
     if (item) {
-      console.debug('[DragDrop] drag started:', item.id, item.shape, item.colour)
+      console.log('[DragDrop] drag started:', item.id, item.shape, item.colour)
     }
   }
 
@@ -26,7 +26,7 @@ export class DragDropService {
     if (event.over) {
       const bucket = buckets.find(b => b.id === String(event.over!.id))
       if (bucket) {
-        console.debug('[DragDrop] hovering over bucket:', bucket.id, bucket.label)
+        console.log('[DragDrop] hovering over bucket:', bucket.id, bucket.label)
       }
     }
   }
@@ -35,7 +35,7 @@ export class DragDropService {
     const activeId = String(event.active.id)
     const item = unsortedItems.find(i => i.id === activeId)
     if (item) {
-      console.debug('[DragDrop] drag cancelled:', item.id, item.shape, item.colour)
+      console.log('[DragDrop] drag cancelled:', item.id, item.shape, item.colour)
     }
   }
 
@@ -57,8 +57,8 @@ export class DragDropService {
 
     const accepted = targetBucket.accepts(droppedItem)
 
-    console.debug('[DragDrop] item:', droppedItem.id, droppedItem.shape, droppedItem.colour)
-    console.debug('[DragDrop] target bucket:', targetBucket.id, '→ accepted:', accepted)
+    console.log('[DragDrop] item:', droppedItem.id, droppedItem.shape, droppedItem.colour)
+    console.log('[DragDrop] target bucket:', targetBucket.id, '→ accepted:', accepted)
 
     return {
       accepted,

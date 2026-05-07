@@ -94,6 +94,6 @@ export class ApiService implements IApiService {
   }
 
   private logResponse(label: string, data: unknown): void {
-    console.debug(label, data)
+    console.log(label, data)
   }
 }

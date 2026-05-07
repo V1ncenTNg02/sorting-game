@@ -1293,3 +1293,30 @@ Functionality or logic before change:
 
 Functionality or logic after change:
 - No code changed. commit.md now contains clear answers to both required Task 8 documentation questions.
+
+### Task: Change all console.debug to console.log for visibility
+
+Prompts:
+```text
+Change all console.debug into console.log for better visibility of the logging information and update the commit.md for this decision.
+```
+
+Outcome:
+- Replaced all `console.debug` calls with `console.log` in `DragDropService.ts`, `ApiService.ts`, and `useGameStore.ts`.
+- Updated `DragDropService.test.ts` to spy on `console.log` instead of `console.debug`.
+- Updated the "Decisions made" section in `commit.md` to document why `console.log` was chosen over `console.debug`.
+- 117/117 frontend tests pass after the change.
+- Output used fully.
+
+Code edited:
+- frontend/src/services/DragDropService.ts
+- frontend/src/services/ApiService.ts
+- frontend/src/store/useGameStore.ts
+- frontend/src/services/DragDropService.test.ts
+- commit.md
+
+Functionality or logic before change:
+- All debug output used `console.debug`, which is hidden in Chrome DevTools at the default log level (requires switching to Verbose).
+
+Functionality or logic after change:
+- All debug output uses `console.log`, visible immediately in Chrome DevTools at the default log level without any filter changes.

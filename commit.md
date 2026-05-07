@@ -731,7 +731,7 @@ _Manual browser verification:_
 
 **Decisions made:**
 - All logs placed in the service/store layer, never inside React components — keeps components as thin UI shells.
-- `console.debug` used throughout — invisible at default Chrome log level, visible on Verbose; no noise in standard browser sessions.
+- Switched from `console.debug` to `console.log` so debug output is visible at the default Chrome DevTools log level without requiring Verbose mode. `console.debug` was originally chosen to avoid noise in standard sessions, but the requirement is for output to be immediately visible during inspection without any filter changes.
 - `handleDragOver` only logs when the active id is in `unsortedItems` and `over.id` matches a known bucket — prevents spurious output.
 - Full API response objects logged (not partial summaries) so the console shows exactly what the server returned.
 

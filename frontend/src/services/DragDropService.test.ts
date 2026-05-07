@@ -56,28 +56,28 @@ describe('DragDropService', () => {
 
   describe('handleDragOver', () => {
     it('logs bucket label when hovering over a known bucket', () => {
-      const spy = vi.spyOn(console, 'debug').mockImplementation(() => {})
+      const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
       service.handleDragOver(makeOverEvent('item-1', 'bucket-red-triangle'), items, buckets)
       expect(spy).toHaveBeenCalledWith('[DragDrop] hovering over bucket:', 'bucket-red-triangle', 'Red Triangle')
       spy.mockRestore()
     })
 
     it('does not log when active item is not in unsorted list', () => {
-      const spy = vi.spyOn(console, 'debug').mockImplementation(() => {})
+      const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
       service.handleDragOver(makeOverEvent('item-99', 'bucket-red-triangle'), items, buckets)
       expect(spy).not.toHaveBeenCalled()
       spy.mockRestore()
     })
 
     it('does not log when over id does not match a bucket', () => {
-      const spy = vi.spyOn(console, 'debug').mockImplementation(() => {})
+      const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
       service.handleDragOver(makeOverEvent('item-1', 'bucket-unknown'), items, buckets)
       expect(spy).not.toHaveBeenCalled()
       spy.mockRestore()
     })
 
     it('does not log when not over any droppable', () => {
-      const spy = vi.spyOn(console, 'debug').mockImplementation(() => {})
+      const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
       service.handleDragOver(makeOverEvent('item-1', null), items, buckets)
       expect(spy).not.toHaveBeenCalled()
       spy.mockRestore()
@@ -86,14 +86,14 @@ describe('DragDropService', () => {
 
   describe('handleDragCancel', () => {
     it('logs the item when drag is cancelled on a known item', () => {
-      const spy = vi.spyOn(console, 'debug').mockImplementation(() => {})
+      const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
       service.handleDragCancel(makeCancelEvent('item-1'), items)
       expect(spy).toHaveBeenCalledWith('[DragDrop] drag cancelled:', 'item-1', 'triangle', 'red')
       spy.mockRestore()
     })
 
     it('does not log when the active id is not in unsorted items', () => {
-      const spy = vi.spyOn(console, 'debug').mockImplementation(() => {})
+      const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
       service.handleDragCancel(makeCancelEvent('item-99'), items)
       expect(spy).not.toHaveBeenCalled()
       spy.mockRestore()
@@ -102,14 +102,14 @@ describe('DragDropService', () => {
 
   describe('handleDragStart', () => {
     it('logs the item when drag begins on a known item', () => {
-      const spy = vi.spyOn(console, 'debug').mockImplementation(() => {})
+      const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
       service.handleDragStart(makeStartEvent('item-1'), items)
       expect(spy).toHaveBeenCalledWith('[DragDrop] drag started:', 'item-1', 'triangle', 'red')
       spy.mockRestore()
     })
 
     it('does not log when the active id is not in unsorted items', () => {
-      const spy = vi.spyOn(console, 'debug').mockImplementation(() => {})
+      const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
       service.handleDragStart(makeStartEvent('item-99'), items)
       expect(spy).not.toHaveBeenCalled()
       spy.mockRestore()
