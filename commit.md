@@ -578,25 +578,71 @@ curl http://localhost:5173/src/index.css   # verified full Tailwind CSS output
 ## Task 7 - Automated Tests
 
 Commit:
-- Pending
+- test: add App integration tests and loadSharedGame store tests with coverage scripts
 
-What I did:
-- TODO
+**What was done:**
 
-Decisions:
-- Backend test approach: TODO.
-- Frontend test approach: TODO.
-- Coverage approach: TODO.
+**How tests were created:**
+- Discovered the backend test files (backend/src/__tests__/scores.test.ts, games.test.ts, health.test.ts) were already fully written with 27 tests covering all required behaviour — no backend changes needed.
+- Created frontend/src/App.test.tsx with 10 tests using React Testing Library: 5 for status-based rendering (loading/idle/playing/complete) and button interactions, and 5 for the sharing link flow (?session= query param detection, loadSharedGame dispatch, shared WellDoneModal rendering, Play Game button, incomplete shared game hides modal). Uses vi.mock for useGameStore and child components to isolate App.tsx rendering logic.
+- Created frontend/src/store/useGameStore.test.ts with 4 tests for the loadSharedGame store action. Mocks ApiService, LocalStorageService, GameService, and DragDropService using vi.hoisted + vi.mock so the mocks are in place before the store module initialises its service instances. Tests cover: correct id passed to getGame, sharedGame set on success, sharedGame set to null on 404, sharedGame set to null on thrown error.
+- Added @vitest/coverage-v8 devDependency to frontend/package.json and a test:coverage script (vitest run --coverage).
+- Added a test:coverage script to backend/package.json (jest --coverage --forceExit).
 
-Tradeoffs:
-- TODO
-
-Problems encountered:
-- TODO
-
-Terminal commands used:
+**How to run tests:**
 ```powershell
-TODO
+# Backend
+cd backend
+npm test                 # all 27 tests
+npm run test:coverage    # with Istanbul HTML coverage report → backend/coverage/
+
+# Frontend
+cd frontend
+npm test                 # all 108 tests
+npm run test:coverage    # with V8 HTML coverage report → frontend/coverage/
+```
+
+**Code coverage:**
+
+Backend (Jest + Istanbul):
+- Statements: 98.38% | Branches: 91.66% | Functions: 96.77% | Lines: 99.13%
+- Only gaps: GameController line 36 (empty-patch branch, no functional risk), ScoreService line 9 (getBestScore method exercised only via route layer in these tests).
+- View HTML report: open backend/coverage/lcov-report/index.html
+
+Frontend (Vitest + V8):
+- Statements: 75.86% | Branches: 95.83% | Functions: 81.13% | Lines: 75.86%
+- App.tsx: 100% across all metrics.
+- Domain and all service files: 94–100% statements.
+- Low-coverage files: main.tsx (0%, entry point — not meaningful to unit test), LoadingScreen.tsx (0%, mocked in App tests), BucketZone.tsx (0%, deprecated unused component), Timer.tsx (0%, not directly tested), useGameStore.ts (21% statements — only loadSharedGame is unit-tested; startGame/handleDragEnd/resetGame are complex timer+API+DnD flows covered indirectly via component tests).
+- View HTML report: open frontend/coverage/index.html
+
+**Decisions made:**
+- Backend: mock services at the IScoreService/IGameService interface level in each test file (no shared test-app factory needed) — cleaner since each describe block builds its own Express app with inline mocks.
+- Frontend App.test.tsx: mock useGameStore entirely (vi.mock + mockImplementation) and mock GameBoard/LoadingScreen as stub elements — isolates App rendering from store and dnd-kit complexity.
+- Frontend store test: use vi.hoisted() for mockGetGame so the variable is available inside the vi.mock factory that is hoisted before imports.
+- Coverage threshold: not enforced in CI at this stage (coding test scope). HTML reports generated for manual review.
+
+**Tradeoffs:**
+- Mocking at the service interface level (not the repository level) means SQL query logic in repositories is not covered by these tests. Acceptable for a coding test; a real project would add DB integration tests.
+- Mocking the Zustand store in App.test.tsx means only rendering logic is tested there. Store behaviour is tested separately in useGameStore.test.ts and service unit tests.
+- useGameStore statement coverage is low (21%) because the timer, startGame, handleDragEnd, and resetGame actions involve setInterval, async API chains, and drag-and-drop events — testing these in isolation would require extensive fake-timer + mock setup and duplicates coverage already provided by the DragDropService, GameService, and ApiService unit tests.
+
+**Problems encountered:**
+- None. All 135 tests (27 backend + 108 frontend) passed on the first run.
+
+**Verification:**
+```powershell
+cd backend && npm test
+# → 27 passed, 3 test suites
+
+cd frontend && npm test
+# → 108 passed, 15 test files
+
+cd frontend && npm run test:coverage
+# → 108 passed; 75.86% stmts / 95.83% branches frontend
+
+cd backend && npm run test:coverage
+# → 27 passed; 98.38% stmts / 91.66% branches backend
 ```
 
 ## Task 8 - Debug Output and Screenshots

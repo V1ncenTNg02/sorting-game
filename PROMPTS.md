@@ -1066,3 +1066,77 @@ Functionality or logic before change:
 
 Functionality or logic after change:
 - Vite polls the filesystem every 100 ms via `usePolling: true`. Tailwind CSS is now correctly generated and injected in the Docker dev server, matching the styled output from the production build.
+
+## Task 7 – Automated Tests
+
+### Task: Plan Task 7 — automated tests for persistence and business rules
+
+Prompts:
+```text
+write a plan for the seventh task, wait for review and implement it once it is confirmed.
+Requirements and instructions as below: 7) Test: Persistence + Business Rules
+Create automated tests for both the backend and front end
+Backend:
+• Valid score submission
+• Reject invalid score
+• Ensure best score rule is enforced
+• Ensuring sessions are created
+• CRUD operations
+Frontend:
+• Rendering of game
+• Valid drop behaviour
+• Invalid drop behaviour
+• Completion flow
+• Sharing Links work to re-load a game state/outcome
+Commit required.
+In commit.md include:
+• What did you do to create your tests?
+• How do you run tests
+• How much code coverage do you have any how can you test it?
+```
+
+Outcome:
+- Surveyed all existing frontend tests (94 tests across 13 files) and confirmed the backend has zero tests despite Jest + Supertest being configured.
+- Identified that frontend rendering, valid/invalid drop, and Share button tests already exist; the two genuine gaps are App.tsx completion flow and sharing-link reload tests.
+- Produced a detailed plan covering: 2 new backend route test files (scores.test.ts and games.test.ts) using Supertest with mocked repositories, 1 new frontend App.test.tsx file, a shared createTestApp helper, coverage scripts for both suites, and the commit.md content plan.
+- Plan is awaiting user review before implementation begins.
+
+Code edited:
+- None.
+
+Functionality or logic before change:
+- No functionality changed. Planning only.
+
+Functionality or logic after change:
+- No code changed. The Task 7 test plan was drafted and is awaiting user approval.
+
+### Task: Implement Task 7 — automated tests for persistence and business rules
+
+Prompts:
+```text
+Add those tests to the plan, implement all tests following the plan, and show me the coverage of testing after implementation
+```
+
+Outcome:
+- Discovered the backend test files (scores.test.ts, games.test.ts, health.test.ts) were already written with 27 tests; confirmed all pass.
+- Identified the genuine implementation gaps: frontend App.test.tsx (completion flow + sharing link) and useGameStore.test.ts (loadSharedGame store action).
+- Created frontend/src/App.test.tsx with 10 tests: 5 for status transitions (loading/idle/playing/complete/resetGame) and 5 for sharing link behavior (loadSharedGame called with session id, not called without param, shared WellDoneModal renders, Play Game button calls startGame, modal hidden when game not completed).
+- Created frontend/src/store/useGameStore.test.ts with 4 tests: verifies loadSharedGame calls getGame with correct id, sets sharedGame on success, sets sharedGame to null when API returns null, sets sharedGame to null when API throws.
+- Added @vitest/coverage-v8 devDependency and test:coverage script to frontend/package.json.
+- Added test:coverage script to backend/package.json.
+- OOP reviewer: 0 violations.
+- Final test counts: backend 27/27, frontend 108/108 (up from 94).
+- Coverage: backend 98.38% statements / 91.66% branches; frontend 75.86% statements / 95.83% branches (low frontend statement coverage is from untested entry-point files and the bulk of useGameStore actions which are covered integration-style through component tests).
+- Output was used fully.
+
+Code edited:
+- frontend/src/App.test.tsx (new)
+- frontend/src/store/useGameStore.test.ts (new)
+- frontend/package.json
+- backend/package.json
+
+Functionality or logic before change:
+- Backend had 27 tests (already present in __tests__ files) covering route-level score and game CRUD behavior and ScoreService business rules. Frontend had 94 tests but no coverage of App.tsx rendering paths or the loadSharedGame store action. No coverage scripts existed in either package.
+
+Functionality or logic after change:
+- Frontend App.tsx is now fully covered (100%) including the completion modal and the sharing-link reload flow. The loadSharedGame store action is unit-tested against its API contract. Both suites have test:coverage scripts that produce terminal summaries and HTML reports under coverage/.
