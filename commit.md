@@ -2,6 +2,21 @@
 
 This file is the running engineering log for the sorting game coding test. Each section should be updated before the related commit.
 
+## AI Workflow - Claude Code Plan Mode
+
+At the start of each major task, I used Claude Code Plan Mode before allowing implementation work to begin.
+
+The workflow was:
+- Provide Claude Code with the task instructions from the coding test.
+- Add any project context I thought was important for that task, such as existing architecture, previous decisions, testing expectations, or known constraints.
+- Ask Claude Code to generate a plan before editing code.
+- Ask Claude Code to raise clarifying questions when the requirement or implementation direction was ambiguous.
+- Review the proposed todo list, implementation steps, acceptance criteria, and expected execution summary.
+- Once the plan was clear and aligned with the requirement, approve execution and let Claude Code implement against that plan.
+- Review the resulting changes, test output, and summary before accepting or committing the work.
+
+I used this approach to keep the agent scoped to the current task, reduce uncontrolled execution, and make the prompt/context for each task explicit. It also made it easier to compare the result against the original task requirement before moving to the next commit.
+
 ## Project Setup - Documentation Tracking
 
 Commit:
@@ -806,4 +821,38 @@ git commit
 **Verification:**
 - `git status` after commit shows clean working tree with no coverage or `.claude` local state files tracked.
 - README.md re-read to confirm all five corrections are in place and consistent with each other.
+
+## Feature: Shared Game View Messaging
+
+**What was done:**
+- Added `isShared?: boolean` prop to `WellDoneModal`. When `true`: heading renders as "Shared Result" instead of "Well Done!", subtitle renders as "Your friend sorted everything in" instead of "You sorted everything in", and the Share button is hidden (the recipient already holds the URL and does not need to copy it again).
+- Updated `App.tsx` to pass `isShared` to the shared game modal only (own completion modal is unchanged).
+- Added 5 new tests to `WellDoneModal.test.tsx` covering the `isShared` heading, subtitle, and Share button suppression. Updated 2 existing `App.test.tsx` assertions that were checking for "well done" in the shared view to now match "Shared Result".
+- Cherry-picked the commit onto `feat/task-10-update-readme` after it accidentally landed on `main` due to an unnoticed branch switch during the session.
+
+**Decisions made:**
+- `isShared` defaults to `false` so all existing call sites without the prop are unaffected and no existing tests required structural changes.
+- Share button hidden on the shared view: the recipient arrived via the shared URL so re-displaying the button adds no value and avoids confusion about whose session they would be sharing.
+- Heading "Shared Result" chosen over alternatives like "Friend's Score" or "Shared Game" because it describes what the page is (a result that was shared) without assuming the sender's relationship to the recipient.
+
+**Tradeoffs:**
+- The `isShared` boolean approach is simple and explicit. An alternative `variant: 'own' | 'shared'` enum would scale to more variants but is over-engineering for two states.
+- "Your friend" is informal and assumes a social sharing context. More neutral wording like "This player" would be more accurate but less engaging for the intended use case.
+
+**Problems encountered:**
+- Two `App.test.tsx` tests expected `/well done/i` text in the shared game view; they failed after the heading changed to "Shared Result". Fixed by updating the regex to `/shared result/i`.
+- Commit accidentally landed on `main` (branch had silently switched during the session). Recovered by cherry-picking the commit onto `feat/task-10-update-readme` without touching `main` history.
+
+**Terminal commands used:**
+```powershell
+cd frontend
+npm test -- --run          # 120/122 passed (2 failures found and fixed)
+npm test -- --run          # 122/122 passed after App.test.tsx fix
+git checkout feat/task-10-update-readme
+git cherry-pick 42ba85b
+```
+
+**Verification:**
+- 122/122 frontend tests pass after fixes.
+- `git log --oneline feat/task-10-update-readme` confirms cherry-picked commit is present on the feature branch.
 
