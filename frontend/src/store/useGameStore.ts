@@ -5,8 +5,10 @@ import { Bucket } from '../domain/Bucket'
 import { GameService } from '../services/GameService'
 import { DragDropService } from '../services/DragDropService'
 import { ApiService } from '../services/ApiService'
+import { LocalStorageService } from '../services/LocalStorageService'
 import type { IApiService } from '../services/ApiService'
-import type { GameStatus } from '../types/game.types'
+import type { ILocalStorageService } from '../services/LocalStorageService'
+import type { ApiGame, GameStatus } from '../types/game.types'
 
 interface GameStore {
   status: GameStatus
@@ -16,17 +18,22 @@ interface GameStore {
   elapsedSeconds: number
   sessionId: string | null
   bestScore: number | null
+  sharedGame: ApiGame | null
   loadBestScore(): Promise<void>
   startGame(): Promise<void>
   handleDragEnd(event: DragEndEvent): void
   resetGame(): void
+  loadSharedGame(id: string): Promise<void>
 }
 
 const gameService = new GameService()
 const dragDropService = new DragDropService()
 const apiService: IApiService = new ApiService()
+const localStorageService: ILocalStorageService = new LocalStorageService()
 
 let timerInterval: ReturnType<typeof setInterval> | null = null
+
+const TIMER_SAVE_INTERVAL_TICKS = 10
 
 function clearTimer(): void {
   if (timerInterval !== null) {
@@ -37,10 +44,24 @@ function clearTimer(): void {
 
 function startTimer(): void {
   clearTimer()
+  let tickCount = 0
   timerInterval = setInterval(() => {
+    tickCount += 1
     useGameStore.setState(s =>
       s.status === 'playing' ? { elapsedSeconds: s.elapsedSeconds + 1 } : {}
     )
+    if (tickCount % TIMER_SAVE_INTERVAL_TICKS === 0) {
+      const s = useGameStore.getState()
+      if (s.status === 'playing') {
+        localStorageService.save({
+          status: 'playing',
+          unsortedItems: s.unsortedItems,
+          bucketCounts: s.bucketCounts,
+          elapsedSeconds: s.elapsedSeconds,
+          sessionId: s.sessionId,
+        })
+      }
+    }
   }, 1000)
 }
 
@@ -52,6 +73,7 @@ export const useGameStore = create<GameStore>(set => ({
   elapsedSeconds: 0,
   sessionId: null,
   bestScore: null,
+  sharedGame: null,
 
   async loadBestScore() {
     const score = await apiService.getBestScore()
@@ -61,6 +83,7 @@ export const useGameStore = create<GameStore>(set => ({
   },
 
   async startGame() {
+    localStorageService.clear()
     const items = gameService.generateItems()
     const buckets = gameService.generateBuckets()
     const initialCounts: Record<string, number> = {}
@@ -73,6 +96,7 @@ export const useGameStore = create<GameStore>(set => ({
       bucketCounts: initialCounts,
       elapsedSeconds: 0,
       sessionId: null,
+      sharedGame: null,
     })
     startTimer()
     console.debug('[Game] started — items:', ITEM_COUNT_LOG, 'buckets:', buckets.length)
@@ -105,8 +129,17 @@ export const useGameStore = create<GameStore>(set => ({
 
       if (isComplete) {
         clearTimer()
+        localStorageService.clear()
         console.debug('[Game] complete! elapsed:', state.elapsedSeconds)
         void handleGameCompletion(state.elapsedSeconds)
+      } else {
+        localStorageService.save({
+          status: 'playing',
+          unsortedItems: updatedUnsorted,
+          bucketCounts: updatedCounts,
+          elapsedSeconds: state.elapsedSeconds,
+          sessionId: state.sessionId,
+        })
       }
 
       return {
@@ -119,6 +152,7 @@ export const useGameStore = create<GameStore>(set => ({
 
   resetGame() {
     clearTimer()
+    localStorageService.clear()
     const items = gameService.generateItems()
     const buckets = gameService.generateBuckets()
     const initialCounts: Record<string, number> = {}
@@ -131,6 +165,7 @@ export const useGameStore = create<GameStore>(set => ({
       bucketCounts: initialCounts,
       elapsedSeconds: 0,
       sessionId: null,
+      sharedGame: null,
     })
     startTimer()
     console.debug('[Game] reset')
@@ -138,6 +173,17 @@ export const useGameStore = create<GameStore>(set => ({
     void apiService.createGame(items)
       .then(game => useGameStore.setState({ sessionId: game.id }))
       .catch(err => console.debug('[Game] reset session create failed (offline):', err))
+  },
+
+  async loadSharedGame(id: string) {
+    try {
+      const game = await apiService.getGame(id)
+      set({ sharedGame: game })
+      console.debug('[Game] shared game loaded:', game?.id ?? 'not found')
+    } catch (err) {
+      console.debug('[Game] shared game load failed:', err)
+      set({ sharedGame: null })
+    }
   },
 }))
 
@@ -168,7 +214,22 @@ async function handleGameCompletion(elapsedSeconds: number): Promise<void> {
   }
 }
 
-// Transition loading → idle
+// Transition loading → idle, or restore a saved in-progress game
 setTimeout(() => {
-  useGameStore.setState({ status: 'idle' })
+  const saved = localStorageService.load()
+  if (saved) {
+    const buckets = gameService.generateBuckets()
+    useGameStore.setState({
+      status: 'playing',
+      unsortedItems: saved.unsortedItems,
+      buckets,
+      bucketCounts: saved.bucketCounts,
+      elapsedSeconds: saved.elapsedSeconds,
+      sessionId: saved.sessionId,
+    })
+    startTimer()
+    console.debug('[Game] restored from localStorage, elapsed:', saved.elapsedSeconds)
+  } else {
+    useGameStore.setState({ status: 'idle' })
+  }
 }, 600)

@@ -5,20 +5,30 @@ import { GameBoard } from './components/GameBoard/GameBoard'
 import { WellDoneModal } from './components/WellDoneModal/WellDoneModal'
 
 function App() {
-  const status        = useGameStore(s => s.status)
-  const unsortedItems = useGameStore(s => s.unsortedItems)
-  const buckets       = useGameStore(s => s.buckets)
-  const bucketCounts  = useGameStore(s => s.bucketCounts)
-  const elapsedSeconds = useGameStore(s => s.elapsedSeconds)
-  const bestScore     = useGameStore(s => s.bestScore)
-  const loadBestScore = useGameStore(s => s.loadBestScore)
-  const startGame     = useGameStore(s => s.startGame)
-  const handleDragEnd = useGameStore(s => s.handleDragEnd)
-  const resetGame     = useGameStore(s => s.resetGame)
+  const status          = useGameStore(s => s.status)
+  const unsortedItems   = useGameStore(s => s.unsortedItems)
+  const buckets         = useGameStore(s => s.buckets)
+  const bucketCounts    = useGameStore(s => s.bucketCounts)
+  const elapsedSeconds  = useGameStore(s => s.elapsedSeconds)
+  const bestScore       = useGameStore(s => s.bestScore)
+  const sessionId       = useGameStore(s => s.sessionId)
+  const sharedGame      = useGameStore(s => s.sharedGame)
+  const loadBestScore   = useGameStore(s => s.loadBestScore)
+  const startGame       = useGameStore(s => s.startGame)
+  const handleDragEnd   = useGameStore(s => s.handleDragEnd)
+  const resetGame       = useGameStore(s => s.resetGame)
+  const loadSharedGame  = useGameStore(s => s.loadSharedGame)
 
   useEffect(() => {
     void loadBestScore()
   }, [loadBestScore])
+
+  useEffect(() => {
+    const sessionParam = new URLSearchParams(window.location.search).get('session')
+    if (sessionParam) {
+      void loadSharedGame(sessionParam)
+    }
+  }, [loadSharedGame])
 
   if (status === 'loading') {
     return <LoadingScreen />
@@ -41,6 +51,25 @@ function App() {
     )
   }
 
+  const sharedGameModal = sharedGame?.completed && sharedGame.durationMs !== null ? (
+    <WellDoneModal
+      elapsedSeconds={Math.round(sharedGame.durationMs / 1000)}
+      bestScore={bestScore}
+      sessionId={sharedGame.id}
+      onReset={startGame}
+      resetLabel="Play Game"
+    />
+  ) : null
+
+  const completionModal = status === 'complete' && !sharedGame ? (
+    <WellDoneModal
+      elapsedSeconds={elapsedSeconds}
+      bestScore={bestScore}
+      sessionId={sessionId}
+      onReset={resetGame}
+    />
+  ) : null
+
   return (
     <>
       <GameBoard
@@ -51,9 +80,7 @@ function App() {
         onDragEnd={handleDragEnd}
         onReset={resetGame}
       />
-      {status === 'complete' && (
-        <WellDoneModal elapsedSeconds={elapsedSeconds} bestScore={bestScore} onReset={resetGame} />
-      )}
+      {sharedGameModal ?? completionModal}
     </>
   )
 }

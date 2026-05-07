@@ -231,4 +231,38 @@ describe('ApiService', () => {
       })
     })
   })
+
+  describe('getGame', () => {
+    const game: ApiGame = {
+      id: 'game-uuid',
+      items: [],
+      durationMs: 45000,
+      completed: true,
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+    }
+
+    it('GETs /api/games/:id and returns ApiGame on 200', async () => {
+      fetchMock.mockResolvedValueOnce(mockFetchResponse(200, game))
+
+      const result = await service.getGame('game-uuid')
+
+      expect(result).toEqual(game)
+      expect(fetchMock).toHaveBeenCalledWith('/api/games/game-uuid')
+    })
+
+    it('returns null on 404', async () => {
+      fetchMock.mockResolvedValueOnce(mockFetchResponse(404, { error: 'Not found' }))
+
+      const result = await service.getGame('missing-id')
+
+      expect(result).toBeNull()
+    })
+
+    it('throws on non-2xx non-404 response', async () => {
+      fetchMock.mockResolvedValueOnce(mockFetchResponse(500, { error: 'Server error' }))
+
+      await expect(service.getGame('game-uuid')).rejects.toThrow()
+    })
+  })
 })

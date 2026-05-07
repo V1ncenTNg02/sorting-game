@@ -11,6 +11,7 @@ export interface IApiService {
   createGame(items: ShapeItem[]): Promise<ApiGame>
   completeGame(gameId: string, durationMs: number, items: ShapeItem[]): Promise<ApiGame>
   submitScore(value: number): Promise<SubmitScoreResponse>
+  getGame(id: string): Promise<ApiGame | null>
 }
 
 export class ApiService implements IApiService {
@@ -47,6 +48,12 @@ export class ApiService implements IApiService {
   async submitScore(value: number): Promise<SubmitScoreResponse> {
     const data = await this.post<SubmitScoreResponse>('/api/best-score', { value })
     this.logResponse('[Api] score submission:', data)
+    return data
+  }
+
+  async getGame(id: string): Promise<ApiGame | null> {
+    const data = await this.get<ApiGame>(`/api/games/${id}`)
+    if (data) this.logResponse('[Api] game fetched:', data.id)
     return data
   }
 

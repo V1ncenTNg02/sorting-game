@@ -961,3 +961,84 @@ Functionality or logic after change:
 - The WellDoneModal shows a "Best Score" row and a "New best!" label when applicable.
 - All API calls degrade gracefully on failure (null best score, no session ID, skipped PATCH/score); the game continues working offline.
 - 74/74 tests passing.
+
+## Task 6 — Game Logic + Local Storage
+
+### Task: Plan Task 6 — Game Logic + Local Storage
+
+Prompts:
+```text
+write a plan for the sixth task, wait for me to review, and implement it once I confirm. Requirements are as below:
+Game Logic + Local Storage
+Implement full game logic:
+• Drag-and-drop validation
+• Correct vs incorrect bucket logic
+• Bucket counts
+• Timer starts on game start
+• Completion detection
+• "Well Done" modal appears on completion
+• Reset button
+• Share button which is a link to this modal screen with the score details
+• Persist game state in Local Storage
+• Restore game on reload
+Commit required.
+In commit.md include:
+• Game state model
+• How validation works
+• How completion is detected
+• How sharing works with the game sessions
+• Local Storage structure
+```
+
+Outcome:
+- Explored the full codebase to identify what was already implemented vs what was genuinely missing.
+- Found that drag-drop validation, timer, completion detection, WellDoneModal, bucket counts, and reset button are already in place from Tasks 1 and 5.
+- Identified two genuinely missing features: Local Storage persistence (no localStorage usage anywhere) and a Share button with shareable link in the WellDoneModal.
+- Produced a detailed implementation plan covering: `LocalStorageService` class, store integration (save on drag/timer/reset, restore on reload), Share button in WellDoneModal (clipboard copy + "Copied!" feedback), shared session view in App.tsx (read `?session=<UUID>` query param, fetch from API, show read-only WellDoneModal), `ApiService.getGame` method, debug logging audit, tests, and documentation updates.
+- Plan is awaiting user review before implementation begins.
+
+Code edited:
+- None.
+
+Functionality or logic before change:
+- No functionality changed. Planning only.
+
+Functionality or logic after change:
+- No code changed. The Task 6 implementation plan was drafted and is awaiting user approval.
+
+### Task: Implement Task 6 — Local Storage persistence and share link
+
+Prompts:
+```text
+Follow the plan and implement the game logic. Give me a summary of what has been done after implementation and how to test.
+```
+
+Outcome:
+- Created `LocalStorageService` class with `ILocalStorageService` interface; handles save/load/clear for in-progress game state; reconstructs `ShapeItem` instances from JSON on load.
+- Integrated service into `useGameStore`: saves after every accepted drop, every 10 timer ticks (`TIMER_SAVE_INTERVAL_TICKS`), clears on reset/completion, and restores on module load instead of transitioning to idle.
+- Added `getGame` method to `IApiService` and `ApiService`; added `sharedGame` state and `loadSharedGame` action to the store.
+- Updated `App.tsx` to read `?session=<UUID>` on mount and show a read-only WellDoneModal for completed shared sessions.
+- Added Share button to `WellDoneModal` — copies shareable URL to clipboard; shows "Copied!" feedback.
+- OOP reviewer found 2 magic-number violations; both fixed before commit.
+- 94/94 tests passing (up from 74); 11 new tests for `LocalStorageService`, 3 for `getGame`, 5 for the Share button.
+- Output was used fully.
+
+Code edited:
+- frontend/src/services/LocalStorageService.ts (new)
+- frontend/src/services/LocalStorageService.test.ts (new)
+- frontend/src/services/ApiService.ts
+- frontend/src/services/ApiService.test.ts
+- frontend/src/store/useGameStore.ts
+- frontend/src/components/WellDoneModal/WellDoneModal.tsx
+- frontend/src/components/WellDoneModal/WellDoneModal.test.tsx
+- frontend/src/App.tsx
+- commit.md
+- PROMPTS.md
+
+Functionality or logic before change:
+- No Local Storage usage existed. Game state was lost on page reload. The WellDoneModal had no Share button and no way to generate a shareable link. The `ApiService` had no `getGame` method.
+
+Functionality or logic after change:
+- Game state is persisted to `localStorage` under key `sorting-game:state` after every accepted drop and every 10 seconds. On page reload, the game resumes from the saved state (items, bucket counts, elapsed time, session ID). On game completion or reset, the saved state is cleared.
+- Share button in WellDoneModal generates `?session=<UUID>` URL, copies it to clipboard, and shows "Copied!" for 2 seconds.
+- Opening the app with `?session=<UUID>` fetches that session via `GET /api/games/:id` and, if completed, shows the WellDoneModal in read-only mode with a "Play Game" button that starts a fresh session.

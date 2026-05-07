@@ -487,28 +487,65 @@ npx vitest run                                   # verify all 74 tests pass (12 
 ## Task 6 - Game Logic and Local Storage
 
 Commit:
-- Pending
+- feat: implement Local Storage persistence and shareable game session links
 
-What I did:
-- TODO
+**What was done:**
+- Created `LocalStorageService` class implementing `ILocalStorageService` — handles `save`, `load`, and `clear` for in-progress game state. Reconstructs `ShapeItem` class instances from plain JSON on load to restore method access.
+- Integrated `LocalStorageService` into `useGameStore`: saves state after every accepted drop; saves every 10 seconds via timer tick; clears on game completion and reset; restores from localStorage on module load (replacing the loading→idle transition when a saved game exists).
+- Added `getGame(id: string): Promise<ApiGame | null>` to `IApiService` and `ApiService`.
+- Added `sharedGame: ApiGame | null` and `loadSharedGame(id: string): Promise<void>` to the Zustand store.
+- Updated `App.tsx` to read `?session=<UUID>` from the URL query string on mount; calls `loadSharedGame` if present; shows `WellDoneModal` in read-only mode with that session's duration and a "Play Game" button.
+- Added Share button to `WellDoneModal`: builds `?session=<UUID>` URL, copies to clipboard, shows "Copied!" feedback for 2 seconds. Share button only visible when `sessionId` is provided.
+- OOP reviewer: 2 violations found (magic numbers `10` and `2000`) and fixed — extracted as `TIMER_SAVE_INTERVAL_TICKS` and `COPY_FEEDBACK_DURATION_MS`.
 
-Decisions:
-- Game state model: TODO.
-- Drop validation: TODO.
-- Completion detection: TODO.
-- Sharing mechanism: TODO.
-- Local Storage structure: TODO.
+**Game state model:**
+- Core game truth lives in the Zustand store (`useGameStore`): `status`, `unsortedItems`, `bucketCounts`, `elapsedSeconds`, `sessionId`, `bestScore`.
+- A `PersistedGameState` snapshot type will be defined for Local Storage: `{ status: 'playing', unsortedItems, bucketCounts, elapsedSeconds, sessionId }`. Best score is excluded — it is always fetched from the API on mount.
+- A `SharedGame` view type (read-only, derived from `ApiGame`) will be used when rendering a completed session via the `?session=<UUID>` query param.
 
-Tradeoffs:
-- TODO
+**How validation works:**
+- Already implemented: `DragDropService.handleDragEnd` extracts the dragged item and target bucket, delegates to `bucket.accepts(item)` which checks `item.shape === bucket.shape && item.colour === bucket.colour`, and returns a `DropResult` (accepted/rejected) or null.
+- Accepted items are removed from `unsortedItems`; rejected items stay. No store change occurs for rejected drops.
 
-Problems encountered:
-- TODO
+**How completion is detected:**
+- Already implemented: `GameService.isComplete(unsortedItems)` returns `true` when `unsortedItems.length === 0`. This is checked inside `handleDragEnd` after every accepted drop. When true, the store sets `status: 'complete'`, stops the timer interval, and fires the API completion calls.
 
-Terminal commands used:
+**How sharing works with game sessions:**
+- Share button (to be added in WellDoneModal): builds `window.location.origin + '/?session=' + sessionId`, copies it to the clipboard via `navigator.clipboard.writeText`, and shows a transient "Copied!" label.
+- Shared view (to be added in App.tsx): on mount, reads `new URLSearchParams(window.location.search).get('session')`; if present, calls `ApiService.getGame(id)` and, if the game is completed, displays the WellDoneModal in read-only mode with that session's `durationMs`. Normal game flow is unaffected.
+
+**Local Storage structure:**
+- Key: `sorting-game:state`
+- Shape: `{ status: 'playing', unsortedItems: ShapeItem[], bucketCounts: Record<string, number>, elapsedSeconds: number, sessionId: string | null }`
+- Written by `LocalStorageService.save()` after every accepted drop and every 10 timer ticks. Cleared by `LocalStorageService.clear()` on reset and on completion.
+- On store module load: `LocalStorageService.load()` is called once; if a `playing` snapshot is found, the store is hydrated and the timer resumes from `elapsedSeconds`.
+
+**Decisions made:**
+- `LocalStorageService` as a class with `save`, `load`, `clear` methods — keeps persistence logic out of the store and independently testable.
+- Save on drag (every accepted drop) + every 10 seconds on the timer: balances durability against excessive writes. A rejected drop does not change state, so no save is needed.
+- Exclude `bestScore` from Local Storage: always fetched fresh from the API to avoid stale score comparisons.
+- Share link points to `?session=<UUID>` on the same origin: no separate route needed; App.tsx detects the param on mount and shows the modal in read-only mode.
+
+**Tradeoffs:**
+- Saving on every accepted drop instead of every second: fewer writes, but a crash mid-drag after a reject would not lose any progress (rejects do not change state). Acceptable.
+- Read-only shared view in WellDoneModal (not a separate page): simpler, no React Router needed. Tradeoff: the URL does not update after viewing; the user must use the shared link directly.
+- `navigator.clipboard.writeText` for copy: requires HTTPS or localhost. Acceptable for this project scope.
+
+**Problems encountered:**
+- None during planning.
+
+**Terminal commands used:**
 ```powershell
-TODO
+cd frontend
+npx vitest run                  # 94/94 tests passing across 13 test files
 ```
+
+**Verification:**
+- 94/94 tests passing across 13 test files (up from 74).
+- OOP reviewer: 2 violations found (magic numbers `10` and `2000`) and fixed before commit.
+- New `LocalStorageService` tests: 11/11 passing including round-trip and class reconstruction.
+- New `ApiService.getGame` tests: 3/3 passing.
+- New `WellDoneModal` share button tests: 5/5 passing.
 
 ## Task 7 - Automated Tests
 

@@ -1,7 +1,13 @@
+import { useState } from 'react'
+
+const COPY_FEEDBACK_DURATION_MS = 2000
+
 interface Props {
   elapsedSeconds: number
   bestScore: number | null
+  sessionId?: string | null
   onReset: () => void
+  resetLabel?: string
 }
 
 function formatTime(seconds: number): string {
@@ -10,8 +16,23 @@ function formatTime(seconds: number): string {
   return `${mm}:${ss}`
 }
 
-export function WellDoneModal({ elapsedSeconds, bestScore, onReset }: Props) {
+export function WellDoneModal({
+  elapsedSeconds,
+  bestScore,
+  sessionId,
+  onReset,
+  resetLabel = 'Play Again',
+}: Props) {
+  const [copied, setCopied] = useState(false)
   const isNewBest = bestScore !== null && elapsedSeconds < bestScore
+
+  function handleShare(): void {
+    const url = `${window.location.origin}/?session=${sessionId}`
+    void navigator.clipboard.writeText(url).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), COPY_FEEDBACK_DURATION_MS)
+    })
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -34,12 +55,22 @@ export function WellDoneModal({ elapsedSeconds, bestScore, onReset }: Props) {
             )}
           </div>
         )}
-        <button
-          onClick={onReset}
-          className="mt-2 px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors"
-        >
-          Play Again
-        </button>
+        <div className="flex flex-col gap-3 w-full">
+          <button
+            onClick={onReset}
+            className="px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors"
+          >
+            {resetLabel}
+          </button>
+          {sessionId != null && (
+            <button
+              onClick={handleShare}
+              className="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+            >
+              {copied ? 'Copied!' : 'Share'}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
