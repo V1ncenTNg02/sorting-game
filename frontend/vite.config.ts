@@ -11,6 +11,9 @@ export default defineConfig({
     hmr: {
       clientPort: 5173,
     },
+    watch: {
+      usePolling: true,
+    },
     proxy: {
       '/api': {
         target: process.env.VITE_API_TARGET ?? 'http://localhost:3000',

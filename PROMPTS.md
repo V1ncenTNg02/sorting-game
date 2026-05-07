@@ -1042,3 +1042,27 @@ Functionality or logic after change:
 - Game state is persisted to `localStorage` under key `sorting-game:state` after every accepted drop and every 10 seconds. On page reload, the game resumes from the saved state (items, bucket counts, elapsed time, session ID). On game completion or reset, the saved state is cleared.
 - Share button in WellDoneModal generates `?session=<UUID>` URL, copies it to clipboard, and shows "Copied!" for 2 seconds.
 - Opening the app with `?session=<UUID>` fetches that session via `GET /api/games/:id` and, if completed, shows the WellDoneModal in read-only mode with a "Play Game" button that starts a fresh session.
+
+### Task: Fix Tailwind CSS not rendering in Docker dev server
+
+Prompts:
+```text
+why the frontend design became different from step 1? Help me check what is the issue and fix the UI issue
+```
+
+Outcome:
+- Investigated missing Tailwind CSS styles in the Docker dev environment (React rendered correctly but no utility classes were applied).
+- Confirmed the production build generated CSS correctly (18.57 kB) and that all `@tailwindcss/` packages were installed in the container — ruling out a code or dependency issue.
+- Identified root cause: Vite's default file watcher uses `inotify` events which do not fire reliably on Docker + Windows host bind mounts; `@tailwindcss/vite` could not scan source files for class names on initial CSS generation.
+- Fix: added `watch: { usePolling: true }` to the `server` block in `vite.config.ts`.
+- Rebuilt Docker with `docker compose down -v && docker compose up --build -d` to apply the change; verified by curling `http://localhost:5173/src/index.css` which returned full Tailwind CSS including all game utility classes.
+- Output was used fully.
+
+Code edited:
+- frontend/vite.config.ts
+
+Functionality or logic before change:
+- Vite used the default filesystem event watcher. On Docker + Windows host bind mounts this prevented `@tailwindcss/vite` from detecting source file changes, causing Tailwind utilities to be absent from the injected CSS in dev mode.
+
+Functionality or logic after change:
+- Vite polls the filesystem every 100 ms via `usePolling: true`. Tailwind CSS is now correctly generated and injected in the Docker dev server, matching the styled output from the production build.

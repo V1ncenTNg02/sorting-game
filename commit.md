@@ -547,6 +547,34 @@ npx vitest run                  # 94/94 tests passing across 13 test files
 - New `ApiService.getGame` tests: 3/3 passing.
 - New `WellDoneModal` share button tests: 5/5 passing.
 
+## Fix: Tailwind CSS not rendering in Docker dev server
+
+**What was done:**
+- Added `watch: { usePolling: true }` to the `server` block in `frontend/vite.config.ts`.
+- Rebuilt Docker containers with `docker compose down -v && docker compose up --build -d` to apply the change and clear stale volume state.
+
+**Decisions made:**
+- Used `usePolling: true` rather than configuring a specific polling interval — the Vite default polling interval (100 ms) is sufficient and avoids hard-coding a number.
+- Scoped the fix to the Vite `server.watch` config only; no changes to `@tailwindcss/vite` setup, `index.css`, or component files were needed.
+
+**Tradeoffs:**
+- Polling uses slightly more CPU than event-based watching, but is negligible on a dev machine. The alternative (inotify event-based watching) does not fire reliably on Docker + Windows host bind mounts, which caused Tailwind utilities to be absent entirely. Polling is the standard recommended fix for this scenario.
+
+**Problems encountered:**
+- Styles were absent in the Docker dev server despite the production build (`vite build`) generating the correct 18.57 kB CSS. This mismatch initially suggested a runtime injection issue rather than a file-watching issue.
+- Investigation steps: confirmed `@tailwindcss/` packages were installed in the container; confirmed `index.css` used `@import "tailwindcss"` correctly; confirmed components used valid Tailwind class names; production build output was correct — all ruled out code or dependency problems.
+- Root cause identified: Vite's default inotify-based watcher does not receive events from Windows-host bind mounts inside Docker, so `@tailwindcss/vite` never detected source files and generated no utility CSS in dev mode.
+
+**Terminal commands used:**
+```powershell
+docker compose down -v
+docker compose up --build -d
+curl http://localhost:5173/src/index.css   # verified full Tailwind CSS output
+```
+
+**Verification:**
+- Curling `http://localhost:5173/src/index.css` after rebuild returned the full Tailwind CSS stylesheet including `flex`, `h-screen`, `w-44`, `items-center`, `bg-blue-500`, and all other utility classes used in the game.
+
 ## Task 7 - Automated Tests
 
 Commit:
