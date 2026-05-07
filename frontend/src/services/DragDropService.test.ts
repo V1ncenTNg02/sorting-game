@@ -1,8 +1,17 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { DragDropService } from './DragDropService'
 import { ShapeItem } from '../domain/ShapeItem'
 import { Bucket } from '../domain/Bucket'
-import type { DragEndEvent } from '@dnd-kit/core'
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
+
+function makeStartEvent(activeId: string): DragStartEvent {
+  return {
+    active: { id: activeId, data: { current: undefined }, rect: { current: { initial: null, translated: null } } },
+    activatorEvent: new PointerEvent('pointerdown'),
+    collisions: [],
+    delta: { x: 0, y: 0 },
+  } as unknown as DragStartEvent
+}
 
 function makeEvent(activeId: string, overId: string | null): DragEndEvent {
   return {
@@ -25,6 +34,22 @@ describe('DragDropService', () => {
     new Bucket('bucket-red-triangle', 'triangle', 'red', 'Red Triangle'),
     new Bucket('bucket-blue-square',  'square',   'blue', 'Blue Square'),
   ]
+
+  describe('handleDragStart', () => {
+    it('logs the item when drag begins on a known item', () => {
+      const spy = vi.spyOn(console, 'debug').mockImplementation(() => {})
+      service.handleDragStart(makeStartEvent('item-1'), items)
+      expect(spy).toHaveBeenCalledWith('[DragDrop] drag started:', 'item-1', 'triangle', 'red')
+      spy.mockRestore()
+    })
+
+    it('does not log when the active id is not in unsorted items', () => {
+      const spy = vi.spyOn(console, 'debug').mockImplementation(() => {})
+      service.handleDragStart(makeStartEvent('item-99'), items)
+      expect(spy).not.toHaveBeenCalled()
+      spy.mockRestore()
+    })
+  })
 
   it('returns null when dropped outside any bucket', () => {
     expect(service.handleDragEnd(makeEvent('item-1', null), items, buckets)).toBeNull()

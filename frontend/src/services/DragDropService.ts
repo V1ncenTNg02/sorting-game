@@ -1,4 +1,4 @@
-import type { DragEndEvent } from '@dnd-kit/core'
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import { ShapeItem } from '../domain/ShapeItem'
 import { Bucket } from '../domain/Bucket'
 
@@ -10,6 +10,14 @@ export interface DropResult {
 }
 
 export class DragDropService {
+  handleDragStart(event: DragStartEvent, unsortedItems: ShapeItem[]): void {
+    const activeId = String(event.active.id)
+    const item = unsortedItems.find(i => i.id === activeId)
+    if (item) {
+      console.debug('[DragDrop] drag started:', item.id, item.shape, item.colour)
+    }
+  }
+
   handleDragEnd(
     event: DragEndEvent,
     unsortedItems: ShapeItem[],

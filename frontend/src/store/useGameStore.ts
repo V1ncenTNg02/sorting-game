@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { DragEndEvent } from '@dnd-kit/core'
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import { ShapeItem } from '../domain/ShapeItem'
 import { Bucket } from '../domain/Bucket'
 import { GameService } from '../services/GameService'
@@ -21,6 +21,7 @@ interface GameStore {
   sharedGame: ApiGame | null
   loadBestScore(): Promise<void>
   startGame(): Promise<void>
+  handleDragStart(event: DragStartEvent): void
   handleDragEnd(event: DragEndEvent): void
   resetGame(): void
   loadSharedGame(id: string): Promise<void>
@@ -108,6 +109,10 @@ export const useGameStore = create<GameStore>(set => ({
     } catch (err) {
       console.debug('[Game] session create failed (offline):', err)
     }
+  },
+
+  handleDragStart(event: DragStartEvent) {
+    dragDropService.handleDragStart(event, useGameStore.getState().unsortedItems)
   },
 
   handleDragEnd(event: DragEndEvent) {

@@ -1,5 +1,5 @@
 import { DndContext } from '@dnd-kit/core'
-import type { DragEndEvent } from '@dnd-kit/core'
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import { ShapeItem } from '../../domain/ShapeItem'
 import { Bucket } from '../../domain/Bucket'
 import { TopBar } from '../TopBar/TopBar'
@@ -12,6 +12,7 @@ interface Props {
   buckets: Bucket[]
   bucketCounts: Record<string, number>
   elapsedSeconds: number
+  onDragStart: (event: DragStartEvent) => void
   onDragEnd: (event: DragEndEvent) => void
   onReset: () => void
 }
@@ -21,11 +22,12 @@ export function GameBoard({
   buckets,
   bucketCounts,
   elapsedSeconds,
+  onDragStart,
   onDragEnd,
   onReset,
 }: Props) {
   return (
-    <DndContext onDragEnd={onDragEnd}>
+    <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
       <div className="flex flex-col h-screen bg-white">
         <TopBar elapsed={elapsedSeconds} itemsLeft={unsortedItems.length} onReset={onReset} />
 

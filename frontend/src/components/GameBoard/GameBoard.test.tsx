@@ -31,6 +31,7 @@ describe('GameBoard', () => {
         buckets={buckets}
         bucketCounts={bucketCounts}
         elapsedSeconds={0}
+        onDragStart={vi.fn()}
         onDragEnd={vi.fn()}
         onReset={vi.fn()}
       />
@@ -45,6 +46,7 @@ describe('GameBoard', () => {
         buckets={buckets}
         bucketCounts={bucketCounts}
         elapsedSeconds={0}
+        onDragStart={vi.fn()}
         onDragEnd={vi.fn()}
         onReset={vi.fn()}
       />
@@ -60,6 +62,7 @@ describe('GameBoard', () => {
         buckets={buckets}
         bucketCounts={bucketCounts}
         elapsedSeconds={0}
+        onDragStart={vi.fn()}
         onDragEnd={vi.fn()}
         onReset={vi.fn()}
       />

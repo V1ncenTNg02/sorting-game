@@ -22,6 +22,7 @@ const loadBestScore = vi.fn().mockResolvedValue(undefined)
 const loadSharedGame = vi.fn().mockResolvedValue(undefined)
 const startGame = vi.fn().mockResolvedValue(undefined)
 const resetGame = vi.fn()
+const handleDragStart = vi.fn()
 const handleDragEnd = vi.fn()
 
 type StoreOverrides = Partial<{
@@ -47,6 +48,7 @@ function setupStore(overrides: StoreOverrides = {}) {
     sharedGame: null,
     loadBestScore,
     startGame,
+    handleDragStart,
     handleDragEnd,
     resetGame,
     loadSharedGame,

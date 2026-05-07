@@ -1162,3 +1162,62 @@ Functionality or logic before change:
 
 Functionality or logic after change:
 - No code changed. A consolidated commit message was drafted for reference.
+
+## Task 8 – Debug Output and Screenshots
+
+### Task: Audit existing console logs against Task 8 debug requirements
+
+Prompts:
+```text
+Below are the requirements for the task 8, check if there are required console logs for the task 8:
+[Task 8 requirements: dragged item on mouse events, target bucket on drop, validation result, game state, API responses, screenshots in docs/]
+```
+
+Outcome:
+- Grepped all console.debug/log calls across frontend source files.
+- Confirmed that target bucket, validation result, game state, and API responses are already fully logged.
+- Identified one gap: the dragged item is only logged inside DragDropService.handleDragEnd (at drop time). There is no onDragStart handler, so no log fires when the user first picks up an item.
+- Identified a second gap: no screenshots exist in docs/ yet.
+- Recommended adding handleDragStart to DragDropService and useGameStore, wiring onDragStart in GameBoard.tsx, then taking manual Chrome DevTools screenshots.
+- Output used as a gap analysis; awaiting user confirmation to implement the fix.
+
+Code edited:
+- None.
+
+Functionality or logic before change:
+- No functionality changed. Audit only.
+
+Functionality or logic after change:
+- No code changed. Gap analysis was produced and is awaiting user decision on implementation.
+
+### Task: Implement drag-start console logging to close Task 8 debug gap
+
+Prompts:
+```text
+I will add the screenshots manually later. Close the gap between required logging information and logging implemented in the code. Show me the list of required logging and implemented logging after you finishing adding the console logs.
+```
+
+Outcome:
+- Added `handleDragStart(event: DragStartEvent, unsortedItems: ShapeItem[]): void` to `DragDropService` — logs `[DragDrop] drag started: <id> <shape> <colour>` when a drag begins.
+- Added `handleDragStart(event: DragStartEvent): void` to the `GameStore` interface and implemented it in `useGameStore` — delegates to `dragDropService.handleDragStart` with current `unsortedItems` from store state.
+- Added `onDragStart` prop to `GameBoard.tsx` and wired it to `DndContext.onDragStart`.
+- Updated `App.tsx` to read `handleDragStart` from the store and pass it to `GameBoard`.
+- Updated `DragDropService.test.ts` with 2 new tests: logs correct item on drag start, does not log when active id is unknown.
+- Updated `GameBoard.test.tsx` and `App.test.tsx` to supply the new required `onDragStart` prop and mock function.
+- OOP reviewer: 0 violations. All 111 frontend tests pass.
+- Output was used fully.
+
+Code edited:
+- frontend/src/services/DragDropService.ts
+- frontend/src/services/DragDropService.test.ts
+- frontend/src/store/useGameStore.ts
+- frontend/src/components/GameBoard/GameBoard.tsx
+- frontend/src/components/GameBoard/GameBoard.test.tsx
+- frontend/src/App.tsx
+- frontend/src/App.test.tsx
+
+Functionality or logic before change:
+- The dragged item was only logged inside `DragDropService.handleDragEnd` when a drop occurred. There was no `onDragStart` handler, so no console output fired when the user first picked up an item.
+
+Functionality or logic after change:
+- When a user begins dragging a shape, `[DragDrop] drag started: <id> <shape> <colour>` is immediately logged to the browser console. All five required debug categories are now covered: drag-start item, target bucket on drop, validation result, game state, and API responses.
