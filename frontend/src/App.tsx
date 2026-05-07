@@ -1,10 +1,12 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useGameStore } from './store/useGameStore'
 import { LoadingScreen } from './components/LoadingScreen/LoadingScreen'
 import { GameBoard } from './components/GameBoard/GameBoard'
 import { WellDoneModal } from './components/WellDoneModal/WellDoneModal'
 
 function App() {
+  const sessionParam = new URLSearchParams(window.location.search).get('session')
+  const [isLoadingSharedGame, setIsLoadingSharedGame] = useState(Boolean(sessionParam))
   const status          = useGameStore(s => s.status)
   const unsortedItems   = useGameStore(s => s.unsortedItems)
   const buckets         = useGameStore(s => s.buckets)
@@ -24,32 +26,11 @@ function App() {
   }, [loadBestScore])
 
   useEffect(() => {
-    const sessionParam = new URLSearchParams(window.location.search).get('session')
-    if (sessionParam) {
-      void loadSharedGame(sessionParam)
+    if (sessionParam && sharedGame?.id !== sessionParam) {
+      setIsLoadingSharedGame(true)
+      void loadSharedGame(sessionParam).finally(() => setIsLoadingSharedGame(false))
     }
-  }, [loadSharedGame])
-
-  if (status === 'loading') {
-    return <LoadingScreen />
-  }
-
-  if (status === 'idle') {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold text-gray-800 mb-2">Colour Shape Sorting Game</h1>
-          <p className="text-sm text-gray-400 mb-8">Sort all shapes into their correct target buckets.</p>
-          <button
-            onClick={startGame}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-          >
-            Start Game
-          </button>
-        </div>
-      </div>
-    )
-  }
+  }, [loadSharedGame, sessionParam, sharedGame?.id])
 
   const sharedGameModal = sharedGame?.completed && sharedGame.durationMs !== null ? (
     <WellDoneModal
@@ -69,6 +50,31 @@ function App() {
       onReset={resetGame}
     />
   ) : null
+
+  if (sharedGameModal) {
+    return sharedGameModal
+  }
+
+  if (status === 'loading' || isLoadingSharedGame) {
+    return <LoadingScreen />
+  }
+
+  if (status === 'idle') {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-gray-800 mb-2">Colour Shape Sorting Game</h1>
+          <p className="text-sm text-gray-400 mb-8">Sort all shapes into their correct target buckets.</p>
+          <button
+            onClick={startGame}
+            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            Start Game
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>

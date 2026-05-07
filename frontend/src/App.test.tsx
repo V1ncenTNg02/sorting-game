@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import type { ApiGame } from './types/game.types'
@@ -105,11 +105,11 @@ describe('App — status transitions', () => {
 })
 
 describe('App — sharing link', () => {
-  it('calls loadSharedGame with session id from URL query param on mount', () => {
+  it('calls loadSharedGame with session id from URL query param on mount', async () => {
     vi.stubGlobal('location', { search: '?session=shared-game-abc', origin: 'http://localhost:5173' })
     setupStore()
     render(<App />)
-    expect(loadSharedGame).toHaveBeenCalledWith('shared-game-abc')
+    await waitFor(() => expect(loadSharedGame).toHaveBeenCalledWith('shared-game-abc'))
   })
 
   it('does not call loadSharedGame when no session param is present in the URL', () => {
@@ -133,6 +133,23 @@ describe('App — sharing link', () => {
     render(<App />)
     expect(screen.getByText(/well done/i)).toBeInTheDocument()
     expect(screen.getByText('00:30')).toBeInTheDocument()
+  })
+
+  it('renders shared Well Done modal even when app status is idle', () => {
+    vi.stubGlobal('location', { search: '?session=shared-abc', origin: 'http://localhost:5173' })
+    const sharedGame: ApiGame = {
+      id: 'shared-abc',
+      items: [],
+      durationMs: 28000,
+      completed: true,
+      createdAt: '',
+      updatedAt: '',
+    }
+    setupStore({ status: 'idle', sharedGame })
+    render(<App />)
+    expect(screen.getByText(/well done/i)).toBeInTheDocument()
+    expect(screen.getByText('00:28')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /start game/i })).not.toBeInTheDocument()
   })
 
   it('calls startGame when Play Game button is clicked in the shared Well Done modal', async () => {
