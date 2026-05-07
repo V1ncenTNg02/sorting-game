@@ -804,3 +804,107 @@ Functionality or logic before change:
 
 Functionality or logic after change:
 - Backend container runs `npm run migrate` before starting the server on every start. The TypeScript migration runner reads `backend/migrations/*.sql` in order, skips already-applied files via the `schema_migrations` tracking table, and applies pending ones. `scores` and `games` tables are now defined in versioned migration files. The system is idempotent: subsequent starts log "No pending migrations." and start normally.
+
+## Task 4 — Backend CRUD Endpoints
+
+### Task: Plan backend CRUD endpoints for scores and games
+
+Prompts:
+```text
+write a plan for the fourth task, wait for me to review, and implement it once I confirm. Requirements are as below:
+4) API: Create Backend + CRUD Endpoints
+Create backend endpoints:
+• GET /health
+• GET /api/best-score
+• POST /api/best-score
+• GET /api/games
+• POST /api/games
+• GET /api/games/:id
+• PATCH /api/games/:id
+• DELETE /api/games/:id
+Add validation and error handling.
+Business rule:
+• A new best score can only replace the existing one if it is lower.
+The /health endpoint should just return "OK" if the database is healthy, otherwise throw a 500 Http error if something has gone wrong.
+Commit required. In commit.md include: Backend framework choice and why, API structure decisions, Validation approach, How business rules are enforced, Example requests used for testing, Terminal commands used
+```
+
+Outcome:
+- Explored the full backend directory: Express + TypeScript scaffold with health endpoint, database singleton, migration system, and `scores`/`games` tables already in place.
+- Produced a full implementation plan covering file structure (domain, repositories, services, controllers, routes, validation), endpoint behaviour table, Zod validation strategy, `ScoreService.submitScore` business rule logic, test coverage plan, and packages to add (`zod`, `jest`, `ts-jest`, `supertest`).
+- Plan presented for user review; implementation not yet started.
+
+Code edited:
+- None.
+
+Functionality or logic before change:
+- No functionality changed. Planning only.
+
+Functionality or logic after change:
+- No code changed. The Task 4 implementation plan was drafted and is awaiting user approval.
+
+### Task: Implement backend CRUD endpoints, validation, and tests
+
+Prompts:
+```text
+the plan for the fourth task is looking good, follow the plan, write code and give me clear outcome summary of execution
+```
+
+Outcome:
+- Installed `zod` (v4), `jest@29`, `ts-jest@29`, `supertest`, and `@types/*` packages. Downgraded from Jest 30 to Jest 29 because Node 21.7.3 is not in Jest 30's engine list (`^18.14.0 || ^20.0.0 || ^22.0.0`), same pattern as the Vite downgrade on the frontend.
+- Created domain classes `Score` and `Game` with `public readonly` constructor fields.
+- Created `IScoreRepository` / `ScoreRepository` and `IGameRepository` / `GameRepository` with full CRUD SQL; `GameRepository.update` builds dynamic SET clause via extracted private method `buildUpdateSets`.
+- Created `IScoreService` / `ScoreService` (enforces lower-score business rule in `submitScore`) and `IGameService` / `GameService` (pure delegation to repository).
+- Created `ScoreController` and `GameController`; `GameController` casts `req.params['id'] as string` to satisfy `@types/express@5` which types params as `string | string[]`.
+- Created `validate` middleware (Zod `safeParse`, returns 400 with `result.error.issues` — Zod v4 renamed `.errors` to `.issues`), `asyncHandler` wrapper, and Zod schemas in `scoreSchemas.ts` / `gameSchemas.ts`.
+- Refactored route files to use factory functions (`createHealthRouter`, `createScoresRouter`, `createGamesRouter`) accepting injected services/DB — enables clean test setup with mock dependencies.
+- Updated `HealthController` to return plain text `"OK"` (200) or `"Service unavailable"` (500); simplified field declaration to `constructor(private readonly db: ...)`.
+- Updated `index.ts` `Application` class to wire up all routes and add a global error handler.
+- Wrote 27 tests across 3 files (`health.test.ts`, `scores.test.ts`, `games.test.ts`): health up/down, 404 on missing score, score validation, all four business-rule cases (no best, lower, equal, higher), full games CRUD, 404s, and validation rejections.
+- OOP reviewer flagged 2 violations: `HealthController` non-readonly field (fixed), `GameRepository.update` over 20 lines (fixed by extracting `buildUpdateSets`). Final state: 0 violations.
+- 27/27 tests passing.
+- Output was used fully.
+
+Code edited:
+- backend/package.json
+- backend/jest.config.js (new)
+- backend/src/domain/Score.ts (new)
+- backend/src/domain/Game.ts (new)
+- backend/src/repositories/IScoreRepository.ts (new)
+- backend/src/repositories/ScoreRepository.ts (new)
+- backend/src/repositories/IGameRepository.ts (new)
+- backend/src/repositories/GameRepository.ts (new)
+- backend/src/services/IScoreService.ts (new)
+- backend/src/services/ScoreService.ts (new)
+- backend/src/services/IGameService.ts (new)
+- backend/src/services/GameService.ts (new)
+- backend/src/controllers/HealthController.ts
+- backend/src/controllers/ScoreController.ts (new)
+- backend/src/controllers/GameController.ts (new)
+- backend/src/middleware/validate.ts (new)
+- backend/src/middleware/asyncHandler.ts (new)
+- backend/src/validation/scoreSchemas.ts (new)
+- backend/src/validation/gameSchemas.ts (new)
+- backend/src/routes/health.ts
+- backend/src/routes/scores.ts (new)
+- backend/src/routes/games.ts (new)
+- backend/src/index.ts
+- backend/src/__tests__/health.test.ts (new)
+- backend/src/__tests__/scores.test.ts (new)
+- backend/src/__tests__/games.test.ts (new)
+
+Functionality or logic before change:
+- Backend only had `GET /health` returning `{"status":"ok","db":"connected"}` JSON. No score or game endpoints. No validation. No tests. Placeholder test script exiting 0.
+
+Functionality or logic after change:
+- All 8 required endpoints implemented across the full route → controller → service → repository stack.
+- `GET /health` returns plain text `"OK"` (200) or 500 on DB failure.
+- `GET /api/best-score` returns the lowest recorded score or 404 if none.
+- `POST /api/best-score` validates body with Zod, enforces lower-score rule in `ScoreService`, returns `{ accepted: true, score }` or `{ accepted: false, reason }`.
+- `GET /api/games` returns all game sessions ordered by `created_at DESC`.
+- `POST /api/games` validates items array (shape/colour enums), creates and returns 201 with the new game.
+- `GET /api/games/:id` returns game or 404.
+- `PATCH /api/games/:id` applies partial update; maps `duration_ms` → `durationMs` in the patch; returns updated game or 404.
+- `DELETE /api/games/:id` deletes game, returns 204 or 404.
+- Global error handler catches async exceptions and returns 500 JSON.
+- 27 Jest tests passing covering all required backend scenarios.

@@ -1,10 +1,11 @@
 import { Router } from 'express';
-import { DatabaseConnection } from '../config/database';
+import { IDatabaseConnection } from '../config/IDatabase';
 import { HealthController } from '../controllers/HealthController';
+import { asyncHandler } from '../middleware/asyncHandler';
 
-const router = Router();
-const controller = new HealthController(DatabaseConnection.getInstance());
-
-router.get('/', (req, res) => controller.check(req, res));
-
-export default router;
+export function createHealthRouter(db: IDatabaseConnection): Router {
+  const router = Router();
+  const controller = new HealthController(db);
+  router.get('/', asyncHandler((req, res) => controller.check(req, res)));
+  return router;
+}

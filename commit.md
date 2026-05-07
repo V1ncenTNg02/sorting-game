@@ -353,28 +353,84 @@ docker compose logs backend --tail=15
 ## Task 4 - Backend API
 
 Commit:
-- Pending
+- feat: add backend CRUD endpoints, validation, and tests
 
-What I did:
-- TODO
+**What was done:**
+- Added `zod` (v4), `jest@29`, `ts-jest@29`, `supertest`, and related `@types/*` packages. Downgraded from Jest 30 to Jest 29 because Node 21.7.3 is not listed in Jest 30's engine field (`^18.14.0 || ^20.0.0 || ^22.0.0`); same pattern as the Vite downgrade on the frontend.
+- Created domain classes `Score` and `Game` with immutable `public readonly` constructor fields.
+- Created `IScoreRepository` / `ScoreRepository` and `IGameRepository` / `GameRepository`. `ScoreRepository` queries `MIN(value)` ordering; `GameRepository` builds dynamic SET clauses for partial updates via an extracted private `buildUpdateSets` method (OOP method-length rule).
+- Created `IScoreService` / `ScoreService` (enforces lower-score business rule in `submitScore`) and `IGameService` / `GameService` (pure delegation to the repository layer).
+- Created `ScoreController` and `GameController`; controllers delegate entirely to services and map HTTP params/body to service calls.
+- Created `validate` middleware using Zod `safeParse`, returning 400 with `result.error.issues` (Zod v4 renamed `.errors` to `.issues`). Created `asyncHandler` wrapper to catch async exceptions and forward to Express error middleware.
+- Created Zod schemas in `scoreSchemas.ts` (positive integer for `value`) and `gameSchemas.ts` (`shape` and `colour` enums, `items` array min 1; `PatchGameSchema = PostGameSchema.partial()`).
+- Refactored route files to factory functions (`createHealthRouter`, `createScoresRouter`, `createGamesRouter`) that accept injected services or DB — enables Supertest integration tests with mock dependencies and no real database.
+- Updated `HealthController` to return plain text `"OK"` (200) or `"Service unavailable"` (500) as required by the spec; simplified field declaration to `constructor(private readonly db: ...)`.
+- Updated `index.ts` `Application` class to wire all routes and register a global error handler returning 500 JSON on unhandled async exceptions.
+- Wrote 27 Jest tests across 3 files: health (up/down/throw), scores (404 when none, 200 with data, 400 validation, business rule: first/lower/equal/higher), games (list, create, get, patch, delete — including 404 and 400 cases).
 
-Decisions:
-- Backend framework choice: TODO.
-- API structure: TODO.
-- Validation approach: TODO.
-- Business rule enforcement: TODO.
-- Example requests used for testing: TODO.
+**Backend framework choice:**
+- Express — already in place from Task 2. Minimal overhead, wide TypeScript support, well-suited for a small REST API. No compelling reason to replace it mid-project.
 
-Tradeoffs:
-- TODO
+**API structure decisions:**
+- Route factory functions inject a pre-built service; routes contain zero logic. Each controller method maps one HTTP action to one service call. Services hold all business rules. Repositories hold all SQL.
+- `GET /health` is at `/health` (not `/api/health`) — matches the spec exactly.
+- All game/score endpoints are under `/api/` per the spec.
 
-Problems encountered:
-- TODO
+**Validation approach:**
+- Zod v4 schema-first. `validate(schema)` middleware in `src/middleware/validate.ts` wraps `safeParse` and returns `400 { error, details }` on failure. `asyncHandler` in `src/middleware/asyncHandler.ts` forwards uncaught async rejections to Express's error chain. A global error handler in `Application.configureErrorHandling()` returns `500 { error }` for anything that reaches it.
 
-Terminal commands used:
-```powershell
-TODO
+**How business rules are enforced:**
+- `ScoreService.submitScore(value)`: fetches the current best score from the repository. If none exists, or `value < current.value`, inserts the new score and returns `{ accepted: true, score }`. Otherwise returns `{ accepted: false, reason }`. No insert occurs. Logic lives in the service class so it is fully unit-testable without HTTP or a real database.
+
+**Tradeoffs:**
+- Zod v4 over manual validation: composable, self-documenting, zero-repetition error output. Tradeoff: `PostGameSchema.partial()` for PATCH means a completely empty PATCH body passes validation (all fields optional). Acceptable because the repository handles the no-fields case by calling `findById` rather than running a no-op UPDATE.
+- Scores table as append-log: `POST /api/best-score` only inserts; it never updates. The best score is always `SELECT ... ORDER BY value ASC LIMIT 1`. Simpler and fully auditable. Tradeoff: the table grows unbounded — acceptable for this project scope.
+- Route factory functions over module-level singletons: makes routes fully testable without mocking the database module. Tradeoff: services are instantiated once per `Application` boot rather than lazily; negligible cost.
+
+**Problems encountered:**
+- `jest@30` / `@types/jest@30` — EBADENGINE warnings on Node 21.7.3 (odd-numbered non-LTS release not in Jest 30's engine list). Downgraded to `jest@29` and `ts-jest@29`; resolved immediately.
+- `ts-jest@29` + `jest@30` version mismatch: `ts-jest@29` only supports `jest@29`. Fixed by the downgrade above.
+- Zod v4 renamed `.errors` to `.issues` on `ZodError`. TypeScript caught the mismatch; fixed in `validate.ts`.
+- `@types/express@5` types `req.params` values as `string | string[]` rather than plain `string`. Fixed with `req.params['id'] as string` in `GameController`.
+- OOP reviewer flagged two violations: `HealthController.db` not `readonly` (fixed by using `constructor(private readonly db: ...)`) and `GameRepository.update` at ~30 lines (fixed by extracting `buildUpdateSets` private method). Both resolved before commit.
+
+**Example requests used for testing (curl):**
+```bash
+curl http://localhost:3000/health
+
+curl http://localhost:3000/api/best-score
+
+curl -X POST http://localhost:3000/api/best-score \
+  -H "Content-Type: application/json" \
+  -d '{"value": 12000}'
+
+curl http://localhost:3000/api/games
+
+curl -X POST http://localhost:3000/api/games \
+  -H "Content-Type: application/json" \
+  -d '{"items":[{"id":"1","shape":"triangle","colour":"red"}]}'
+
+curl http://localhost:3000/api/games/<id>
+
+curl -X PATCH http://localhost:3000/api/games/<id> \
+  -H "Content-Type: application/json" \
+  -d '{"completed":true,"duration_ms":8000}'
+
+curl -X DELETE http://localhost:3000/api/games/<id>
 ```
+
+**Terminal commands used:**
+```bash
+npm install zod
+npm install --save-dev jest ts-jest supertest @types/jest @types/supertest
+npm install --save-dev jest@^29 ts-jest@^29 @types/jest@^29 --legacy-peer-deps
+npm test
+```
+
+**Verification:**
+- `npm test` → 27/27 tests passing across 3 test files (health, scores, games).
+- OOP reviewer: 0 violations after fixes.
+- TypeScript compilation clean (verified via ts-jest during test run).
 
 ## Task 5 - Frontend API Integration
 
