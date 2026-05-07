@@ -1221,3 +1221,50 @@ Functionality or logic before change:
 
 Functionality or logic after change:
 - When a user begins dragging a shape, `[DragDrop] drag started: <id> <shape> <colour>` is immediately logged to the browser console. All five required debug categories are now covered: drag-start item, target bucket on drop, validation result, game state, and API responses.
+- Commit: e34e5d0
+
+### Task: Add drag-over/cancel logging and fix API response logs to show full objects
+
+Prompts:
+```text
+what about the api responses in the console log? at which stage I can see that response? For which endpoints there are console logs for debugging?
+
+Ensure the application is debuggable via the browser console.
+Add console logs for:
+• Dragged item (Everytime there is a Mouse event)
+• Target bucket (Everytime a "drop" event occurs)
+• Validation result (Logic confirming/rejecting the Drop)
+• Game state
+• API responses
+```
+
+Outcome:
+- Identified two gaps: (1) `createGame`, `completeGame`, and `getGame` were logging only partial data (id or a constructed object) instead of the full API response; (2) there was no `onDragOver` or `onDragCancel` handler — mouse events beyond drag-start and drag-end were not logged.
+- Fixed `ApiService.ts`: `createGame`, `completeGame`, and `getGame` now log the full response object via `logResponse`. `getGame` now logs even when the response is `null` (game not found).
+- Added `handleDragOver(event, unsortedItems, buckets)` to `DragDropService` — logs `[DragDrop] hovering over bucket: <id> <label>` when a dragged item enters a droppable zone.
+- Added `handleDragCancel(event, unsortedItems)` to `DragDropService` — logs `[DragDrop] drag cancelled: <id> <shape> <colour>` when a drag is abandoned (e.g. Escape key).
+- Wired both through `useGameStore` (interface + implementation), `GameBoard.tsx` (`onDragOver`/`onDragCancel` props), and `App.tsx` (selectors passed to `GameBoard`).
+- Added 6 new tests to `DragDropService.test.ts` covering `handleDragOver` (known bucket, unknown item, unknown bucket, no droppable) and `handleDragCancel` (known item, unknown item).
+- Updated `GameBoard.test.tsx` and `App.test.tsx` with the new required props/mocks.
+- OOP reviewer: 0 violations. All 117 frontend tests pass.
+- Output used fully.
+
+Code edited:
+- frontend/src/services/ApiService.ts
+- frontend/src/services/DragDropService.ts
+- frontend/src/services/DragDropService.test.ts
+- frontend/src/store/useGameStore.ts
+- frontend/src/components/GameBoard/GameBoard.tsx
+- frontend/src/components/GameBoard/GameBoard.test.tsx
+- frontend/src/App.tsx
+- frontend/src/App.test.tsx
+
+Functionality or logic before change:
+- `createGame` logged only the game id string; `completeGame` logged a constructed `{ id, durationMs }` object; `getGame` logged only the id and only when non-null — none showed the full API response body.
+- `DndContext` had no `onDragOver` or `onDragCancel` handlers; no console output fired while a shape was hovering over a bucket or when a drag was cancelled.
+
+Functionality or logic after change:
+- All five API endpoints now log their full response object at the moment the HTTP call resolves.
+- `[DragDrop] hovering over bucket: <id> <label>` fires each time a dragged shape enters a bucket's droppable zone.
+- `[DragDrop] drag cancelled: <id> <shape> <colour>` fires when the user abandons a drag.
+- Every required mouse-event category (start, over, cancel, end/drop) now produces console output.

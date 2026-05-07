@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
+import type { DragCancelEvent, DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core'
 import { ShapeItem } from '../domain/ShapeItem'
 import { Bucket } from '../domain/Bucket'
 import { GameService } from '../services/GameService'
@@ -22,6 +22,8 @@ interface GameStore {
   loadBestScore(): Promise<void>
   startGame(): Promise<void>
   handleDragStart(event: DragStartEvent): void
+  handleDragOver(event: DragOverEvent): void
+  handleDragCancel(event: DragCancelEvent): void
   handleDragEnd(event: DragEndEvent): void
   resetGame(): void
   loadSharedGame(id: string): Promise<void>
@@ -113,6 +115,15 @@ export const useGameStore = create<GameStore>(set => ({
 
   handleDragStart(event: DragStartEvent) {
     dragDropService.handleDragStart(event, useGameStore.getState().unsortedItems)
+  },
+
+  handleDragOver(event: DragOverEvent) {
+    const { unsortedItems, buckets } = useGameStore.getState()
+    dragDropService.handleDragOver(event, unsortedItems, buckets)
+  },
+
+  handleDragCancel(event: DragCancelEvent) {
+    dragDropService.handleDragCancel(event, useGameStore.getState().unsortedItems)
   },
 
   handleDragEnd(event: DragEndEvent) {

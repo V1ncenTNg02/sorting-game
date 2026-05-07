@@ -674,7 +674,7 @@ git log --oneline feat/task-7-test-business-rules ^main
 ## Task 8 - Debug Output and Screenshots
 
 Commit:
-- feat: add drag-start console logging to complete Task 8 debug output
+- feat: add drag-start console logging to complete Task 8 debug output (e34e5d0)
 
 **What was done:**
 
@@ -712,6 +712,40 @@ npm test    # 111/111 passed
 **Verification:**
 - 111 frontend tests pass (up from 108 — 2 new DragDropService tests + 1 new App test from the handleDragStart mock).
 - OOP reviewer: 0 violations across all 7 changed TypeScript files.
+
+## Task 8 - Debug Output (continued) — drag-over/cancel + full API logs
+
+**What was done:**
+- Added `handleDragOver(event, unsortedItems, buckets)` to `DragDropService` — logs `[DragDrop] hovering over bucket: <id> <label>` when a dragged shape enters a bucket's droppable zone.
+- Added `handleDragCancel(event, unsortedItems)` to `DragDropService` — logs `[DragDrop] drag cancelled: <id> <shape> <colour>` when a drag is abandoned (e.g. via Escape).
+- Added `handleDragOver` and `handleDragCancel` to the `GameStore` interface and implemented both in `useGameStore`; each reads current state via `getState()` and delegates to `dragDropService`.
+- Added `onDragOver` and `onDragCancel` props to `GameBoard.tsx`; wired both to `DndContext`.
+- Updated `App.tsx` to select `handleDragOver` and `handleDragCancel` from the store and pass them to `GameBoard`.
+- Fixed `ApiService.ts`: `createGame` now logs the full `ApiGame` object (was only logging `data.id`); `completeGame` now logs the full `ApiGame` response (was logging a constructed `{ id, durationMs }`); `getGame` now always logs the response including `null` (was logging only when non-null and only the id).
+- Added 6 new tests to `DragDropService.test.ts` covering `handleDragOver` (known bucket, unknown item, unknown bucket, no droppable) and `handleDragCancel` (known item, unknown item).
+- Updated `GameBoard.test.tsx` and `App.test.tsx` with new `onDragOver`, `onDragCancel`, `handleDragOver`, `handleDragCancel` props/mocks.
+
+**Decisions made:**
+- `handleDragOver` logs only when the dragged item is in `unsortedItems` and the droppable id matches a known bucket — avoids spurious output when non-game droppables or already-sorted items are involved.
+- `handleDragCancel` mirrors `handleDragStart` in structure — consistent pattern across all drag lifecycle hooks.
+- Full API response objects logged (not summaries) so the browser console shows exactly what the server returned, matching the task requirement of "API responses" debugging.
+
+**Tradeoffs:**
+- `onDragOver` fires repeatedly as the pointer moves within a droppable zone — this is acceptable because dnd-kit deduplicates by droppable id changes, not raw pointer moves. In practice the log fires once per bucket entry, not on every pixel.
+- Logging `null` from `getGame` on a 404 gives visibility into share-link misses without any extra branching.
+
+**Problems encountered:**
+- None. All 117 tests passed on first run after changes.
+
+**Terminal commands used:**
+```powershell
+cd frontend
+npm test -- --run    # 117/117 passed
+```
+
+**Verification:**
+- 117 frontend tests pass (up from 111 — 6 new `DragDropService` tests).
+- OOP reviewer: 0 violations across all 8 changed TypeScript files.
 
 ## Task 9 - README
 

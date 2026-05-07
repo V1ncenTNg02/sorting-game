@@ -31,7 +31,7 @@ export class ApiService implements IApiService {
     const data = await this.post<ApiGame>('/api/games', {
       items: this.toApiItems(items),
     })
-    this.logResponse('[Api] game created:', data.id)
+    this.logResponse('[Api] game created:', data)
     return data
   }
 
@@ -41,7 +41,7 @@ export class ApiService implements IApiService {
       completed: true,
       items: this.toApiItems(items),
     })
-    this.logResponse('[Api] game updated:', { id: data.id, durationMs })
+    this.logResponse('[Api] game updated:', data)
     return data
   }
 
@@ -53,7 +53,7 @@ export class ApiService implements IApiService {
 
   async getGame(id: string): Promise<ApiGame | null> {
     const data = await this.get<ApiGame>(`/api/games/${id}`)
-    if (data) this.logResponse('[Api] game fetched:', data.id)
+    this.logResponse('[Api] game fetched:', data)
     return data
   }
 

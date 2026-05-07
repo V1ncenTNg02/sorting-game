@@ -1,4 +1,4 @@
-import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
+import type { DragCancelEvent, DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core'
 import { ShapeItem } from '../domain/ShapeItem'
 import { Bucket } from '../domain/Bucket'
 
@@ -15,6 +15,27 @@ export class DragDropService {
     const item = unsortedItems.find(i => i.id === activeId)
     if (item) {
       console.debug('[DragDrop] drag started:', item.id, item.shape, item.colour)
+    }
+  }
+
+  handleDragOver(event: DragOverEvent, unsortedItems: ShapeItem[], buckets: Bucket[]): void {
+    const activeId = String(event.active.id)
+    const item = unsortedItems.find(i => i.id === activeId)
+    if (!item) return
+
+    if (event.over) {
+      const bucket = buckets.find(b => b.id === String(event.over!.id))
+      if (bucket) {
+        console.debug('[DragDrop] hovering over bucket:', bucket.id, bucket.label)
+      }
+    }
+  }
+
+  handleDragCancel(event: DragCancelEvent, unsortedItems: ShapeItem[]): void {
+    const activeId = String(event.active.id)
+    const item = unsortedItems.find(i => i.id === activeId)
+    if (item) {
+      console.debug('[DragDrop] drag cancelled:', item.id, item.shape, item.colour)
     }
   }
 

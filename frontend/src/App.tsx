@@ -17,8 +17,10 @@ function App() {
   const sharedGame      = useGameStore(s => s.sharedGame)
   const loadBestScore   = useGameStore(s => s.loadBestScore)
   const startGame       = useGameStore(s => s.startGame)
-  const handleDragStart = useGameStore(s => s.handleDragStart)
-  const handleDragEnd   = useGameStore(s => s.handleDragEnd)
+  const handleDragStart  = useGameStore(s => s.handleDragStart)
+  const handleDragOver   = useGameStore(s => s.handleDragOver)
+  const handleDragCancel = useGameStore(s => s.handleDragCancel)
+  const handleDragEnd    = useGameStore(s => s.handleDragEnd)
   const resetGame       = useGameStore(s => s.resetGame)
   const loadSharedGame  = useGameStore(s => s.loadSharedGame)
 
@@ -85,6 +87,8 @@ function App() {
         bucketCounts={bucketCounts}
         elapsedSeconds={elapsedSeconds}
         onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragCancel={handleDragCancel}
         onDragEnd={handleDragEnd}
         onReset={resetGame}
       />
