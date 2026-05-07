@@ -44,7 +44,9 @@
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(npx vitest *)",
       "Bash(Get-ChildItem -Recurse \"e:\\\\GitProject\\\\sorting-game\\\\frontend\\\\src\" -Filter \"*.test.*\")",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(npx vite *)",
+      "Bash(docker exec *)"
     ]
   }
 }
