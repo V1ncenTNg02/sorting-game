@@ -1407,3 +1407,33 @@ Functionality or logic before change:
 
 Functionality or logic after change:
 - README.md accurately reflects the codebase: 15 items, 7 shape+colour buckets, AND-based drop rule, correct query param, millisecond score values. commit.md Task 8 accurately describes the final implementation using `console.log` visible at the default DevTools log level. Generated artifacts are excluded from tracking and will not reappear after the next `npm run test:coverage` run.
+
+## Feature: Shared Game View Messaging
+
+### Task: Differentiate shared game view messaging from own completion view
+
+Prompts:
+```text
+update the code, if the user uses the copied code to access the game, show different messages like: Your friend finished this game in: or something like this, to differentiate the page of player and the link recipient.
+```
+
+Outcome:
+- Added `isShared?: boolean` prop to `WellDoneModal`. When true: heading changes from "Well Done!" to "Shared Result", subtitle changes from "You sorted everything in" to "Your friend sorted everything in", and the Share button is hidden (the recipient already has the URL).
+- Updated `App.tsx` to pass `isShared` to the shared game modal.
+- Added 5 new tests to `WellDoneModal.test.tsx` covering both heading states, both subtitle states, and the hidden Share button behaviour.
+- Updated 2 existing `App.test.tsx` assertions that were checking for "well done" text in the shared view to now expect "Shared Result".
+- All 122 frontend tests pass.
+- The commit accidentally landed on `main`; cherry-picked onto `feat/task-10-update-readme` to restore correct branch workflow.
+- Output was used fully.
+
+Code edited:
+- frontend/src/components/WellDoneModal/WellDoneModal.tsx
+- frontend/src/components/WellDoneModal/WellDoneModal.test.tsx
+- frontend/src/App.tsx
+- frontend/src/App.test.tsx
+
+Functionality or logic before change:
+- Both the player's own completion view and the shared link recipient view displayed identical text: "Well Done!" heading and "You sorted everything in" subtitle. The Share button was visible in both views.
+
+Functionality or logic after change:
+- The player's own completion view is unchanged. The shared link recipient view now shows "Shared Result" as the heading and "Your friend sorted everything in" as the subtitle. The Share button is hidden on the shared view since the recipient already holds the URL.
