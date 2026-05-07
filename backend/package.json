@@ -6,6 +6,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "migrate": "tsx src/migrations/migrate.ts",
+    "migrate:build": "tsc && node dist/migrations/migrate.js",
     "test": "echo \"No backend tests yet\" && exit 0"
   },
   "dependencies": {

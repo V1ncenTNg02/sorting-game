@@ -281,26 +281,74 @@ Added `"test": "echo \"No backend tests yet\" && exit 0"` to `backend/package.js
 
 ## Task 3 - Database Migrations
 
-Commit:
-- Pending
+**What was done:**
+- Replaced `database/init/01_schema.sql` content with only the `schema_migrations` tracking table DDL. Application tables (`scores`, `games`) moved to numbered migration files so schema changes are tracked and applied incrementally.
+- Created `backend/migrations/0001_create_scores_table.sql` and `backend/migrations/0002_create_games_table.sql` — the canonical source of truth for the database schema.
+- Built a custom TypeScript migration runner under `backend/src/migrations/runner/` with four files:
+  - `IMigrationRunner.ts` — interface defining `runPending(): Promise<void>`
+  - `IMigrationRepository.ts` — interface defining `ensureTrackerTable()`, `getApplied()`, `record(filename)`
+  - `MigrationRepository.ts` — implements `IMigrationRepository`; reads/writes the `schema_migrations` tracking table; self-bootstraps the table via `ensureTrackerTable()` so the runner works on both fresh and existing volumes
+  - `MigrationRunner.ts` — implements `IMigrationRunner`; reads `.sql` files from `backend/migrations/` in lexicographic order, filters to pending files, applies each and records it
+- Created `backend/src/migrations/migrate.ts` — thin entrypoint script (no business logic) that wires up `DatabaseConnection`, `MigrationRepository`, and `MigrationRunner` and calls `runner.runPending()`
+- Added `migrate` and `migrate:build` scripts to `backend/package.json`
+- Created `backend/docker-entrypoint.sh` — runs `npm run migrate` then `exec npm run dev`; called by the backend container on every start
+- Updated `backend/Dockerfile` CMD to `["sh", "/app/docker-entrypoint.sh"]`
 
-What I did:
-- TODO
+**Schema design decisions:**
 
-Decisions:
-- Schema design: TODO.
-- Migration execution approach: TODO.
+`scores` table:
+- `SERIAL PRIMARY KEY`: scores are an append-log, not shared by link — integer is sufficient and efficient.
+- `value INTEGER NOT NULL CHECK (value > 0)`: stores completion time in milliseconds; the check constraint enforces non-zero positive values at the database layer, independent of application validation.
+- `TIMESTAMPTZ NOT NULL DEFAULT NOW()`: timezone-aware timestamp set automatically by the database; always populated even if the application omits it.
+- No foreign key to `games`: the best-score business rule (`GET /api/best-score`, `POST /api/best-score`) treats score as a standalone record. Loose coupling keeps the two endpoints independently testable.
 
-Tradeoffs:
-- TODO
+`games` table:
+- `UUID PRIMARY KEY DEFAULT gen_random_uuid()`: games are shared by link (`GET /api/games/:id`). UUID makes IDs non-enumerable — a sequential integer would let users enumerate game sessions. `gen_random_uuid()` is built into PostgreSQL 13+ (project uses postgres:16-alpine).
+- `items JSONB NOT NULL`: stores the complete game session state (shapes, colours, positions, bucket assignments) as one column. Avoids a `game_items` join table and multiple round-trips per game read/write; still queryable with PostgreSQL's JSONB operators if needed.
+- `duration_ms INTEGER CHECK (duration_ms >= 0)`: nullable because an in-progress game has no completion time yet. The check constraint prevents negative values on `PATCH`.
+- `completed BOOLEAN NOT NULL DEFAULT FALSE`: explicit flag; not derived from `duration_ms` because a game may be abandoned without ever recording a duration.
+- `updated_at TIMESTAMPTZ`: application sets this on each `PATCH /api/games/:id`; no trigger needed for this scope.
 
-Problems encountered:
-- TODO
+`schema_migrations` table:
+- `filename TEXT PRIMARY KEY`: enforces each migration file is recorded exactly once.
+- Created by `MigrationRepository.ensureTrackerTable()` (`CREATE TABLE IF NOT EXISTS`) so the runner is self-bootstrapping on volumes that pre-date this migration system.
+- Also present in the Docker init file as a bootstrap safety net for fresh volumes.
 
-Terminal commands used:
+**Migration execution approach:**
+- Custom TypeScript runner — no new npm packages. Uses `pg` (already installed) and Node built-ins (`fs/promises`, `path`).
+- `process.cwd()/migrations` resolves the SQL directory portably in both `tsx` dev mode and compiled `node dist/` mode.
+- Each migration is applied sequentially in lexicographic (numeric) file order. On success, the filename is recorded in `schema_migrations`; subsequent runs skip recorded files.
+- DDL statements (`CREATE TABLE IF NOT EXISTS`) are implicitly transactional in PostgreSQL — a failed statement auto-rolls back without requiring explicit `BEGIN`/`COMMIT`, keeping the `IDatabaseConnection` interface minimal.
+
+**Tradeoffs:**
+- Custom runner over `node-pg-migrate`: zero new packages, OOP-compliant class design, fully testable. Tradeoff: no built-in rollback support (down migrations). Acceptable for this coding test; a production system would include them.
+- Migrations run on every backend container start: guarantees schema is always current without manual steps; adds ~100 ms startup overhead when there are no pending migrations.
+- `JSONB` for `games.items` over a normalised `game_items` table: simpler reads/writes for this app's access pattern; tradeoff is that querying individual item fields requires JSONB operators rather than SQL columns.
+
+**Problems encountered:**
+- OOP reviewer flagged `MigrationRepository` for not implementing a named interface, and `MigrationRunner` for depending on the concrete class rather than an interface. Fixed by adding `IMigrationRepository.ts` and updating both files.
+- The `./backend:/app` volume bind-mount in Docker Compose overlays the image layer at runtime, stripping Linux execute bits set by `chmod` in the Dockerfile (Windows hosts do not preserve execute permissions). Fixed by using `CMD ["sh", "/app/docker-entrypoint.sh"]` which does not require the execute bit.
+
+**Terminal commands used:**
 ```powershell
-TODO
+docker compose down -v
+docker compose up --build -d
+docker compose ps
+docker compose logs backend --tail=30
+docker compose exec db psql -U postgres -d sorting_game -c "SELECT * FROM schema_migrations;"
+docker compose exec db psql -U postgres -d sorting_game -c "\dt"
+docker compose exec db psql -U postgres -d sorting_game -c "\d scores"
+docker compose exec db psql -U postgres -d sorting_game -c "\d games"
+curl http://localhost:3000/health
+docker compose restart backend
+docker compose logs backend --tail=15
 ```
+
+**Verification:**
+- Fresh volume: both migrations applied on first start; `schema_migrations` records both filenames with timestamps.
+- Subsequent restart: `No pending migrations.` logged; backend starts normally.
+- `GET /health` → `{"status":"ok","db":"connected"}` — database connection unaffected.
+- `\d scores` confirms `CHECK (value > 0)` constraint; `\d games` confirms UUID PK, JSONB column, nullable `duration_ms`, and `CHECK (duration_ms >= 0)` constraint.
 
 ## Task 4 - Backend API
 

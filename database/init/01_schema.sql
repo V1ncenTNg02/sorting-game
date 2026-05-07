@@ -1,14 +1,7 @@
-CREATE TABLE IF NOT EXISTS scores (
-  id          SERIAL PRIMARY KEY,
-  value       INTEGER NOT NULL,
-  recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS games (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  items       JSONB NOT NULL,
-  duration_ms INTEGER,
-  completed   BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- Bootstrap table for the migration runner.
+-- Application tables (scores, games) are created by numbered migration files
+-- in backend/migrations/ and applied by the TypeScript migration runner on startup.
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  filename    TEXT        PRIMARY KEY,
+  applied_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

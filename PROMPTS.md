@@ -756,3 +756,50 @@ Functionality or logic before change:
 
 Functionality or logic after change:
 - Stop hook passes cleanly. Placeholder test script exits 0 until Task 7 adds real backend tests.
+
+## Task 3 – Database Migrations
+
+### Task: Plan and implement database migrations for scores and games tables
+
+Prompts:
+```text
+write a plan for the third task, wait for me to review, and implement it once I confirm. Requirements are as below: 3) Migration: Create Database + Initial Tables
+Create database migrations for:
+• scores table (best score storage)
+• games table (game sessions and sharing mechanism)
+Commit required.
+In commit.md include:
+• Schema design decisions
+• Why you structured tables that way
+• How migrations are executed
+• Terminal commands used
+```
+
+Outcome:
+- Researched the existing backend and Docker structure; found schema already existed as a raw Docker init SQL file with no migration tracking.
+- Designed and planned a custom TypeScript migration runner (no new npm packages) with OOP-compliant class architecture matching the project's route → controller → service → repository layering.
+- User reviewed and approved the plan; implementation proceeded.
+- Built `IMigrationRunner`, `IMigrationRepository`, `MigrationRepository`, `MigrationRunner`, and `migrate.ts` entrypoint.
+- Created `backend/migrations/0001_create_scores_table.sql` and `0002_create_games_table.sql` as the canonical schema source.
+- OOP reviewer flagged two violations (missing `IMigrationRepository` interface; `MigrationRunner` depending on concrete class). Both fixed before commit.
+- Verified on a fresh Docker volume: both migrations applied on first start, idempotent on restart.
+
+Code edited:
+- database/init/01_schema.sql (replaced scores/games DDL with schema_migrations bootstrap only)
+- backend/migrations/0001_create_scores_table.sql (new)
+- backend/migrations/0002_create_games_table.sql (new)
+- backend/src/migrations/runner/IMigrationRunner.ts (new)
+- backend/src/migrations/runner/IMigrationRepository.ts (new)
+- backend/src/migrations/runner/MigrationRepository.ts (new)
+- backend/src/migrations/runner/MigrationRunner.ts (new)
+- backend/src/migrations/migrate.ts (new)
+- backend/docker-entrypoint.sh (new)
+- backend/Dockerfile (updated CMD)
+- backend/package.json (added migrate and migrate:build scripts)
+- commit.md (Task 3 section filled in)
+
+Functionality or logic before change:
+- Schema existed only as a raw SQL file run once by Docker on a fresh volume (`database/init/01_schema.sql`). No migration tracking. No ability to apply incremental schema changes. Backend container started directly with `npm run dev`.
+
+Functionality or logic after change:
+- Backend container runs `npm run migrate` before starting the server on every start. The TypeScript migration runner reads `backend/migrations/*.sql` in order, skips already-applied files via the `schema_migrations` tracking table, and applies pending ones. `scores` and `games` tables are now defined in versioned migration files. The system is idempotent: subsequent starts log "No pending migrations." and start normally.
