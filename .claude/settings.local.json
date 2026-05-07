@@ -26,7 +26,20 @@
       "Bash(powershell -ExecutionPolicy Bypass -File .claude/scripts/run-tests.ps1)",
       "Bash(Remove-Item -Force \".claude/.last-test-run\" -ErrorAction SilentlyContinue)",
       "Bash(powershell -ExecutionPolicy Bypass -Command \"Set-Location 'e:\\\\GitProject\\\\sorting-game'; & '.claude\\\\scripts\\\\run-tests.ps1'\")",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(Select-String \"migrate\" -SimpleMatch)",
+      "Bash(Select-String \"node-pg\" -SimpleMatch)",
+      "Bash(Get-ChildItem \"e:\\\\GitProject\\\\sorting-game\\\\backend\\\\node_modules\" -Directory)",
+      "Bash(Select-Object -First 40 -ExpandProperty Name)",
+      "Bash(git -C \"e:\\\\GitProject\\\\sorting-game\" log --oneline -10)",
+      "Bash(git -C \"e:\\\\GitProject\\\\sorting-game\" branch -a)",
+      "Bash(git -C \"e:\\\\GitProject\\\\sorting-game\" diff main..HEAD --name-only)",
+      "Bash(Get-Content \"e:\\\\GitProject\\\\sorting-game\\\\PROMPTS.md\")",
+      "Bash(Measure-Object -Line)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(h\\) for h in d.get\\('hooks',{}\\).get\\('Stop',[]\\)]\")",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(stat -c \"%n %y\" \"e:/GitProject/sorting-game/PROMPTS.md\" \"e:/GitProject/sorting-game/commit.md\" && date)",
+      "Read(//e/GitProject/sorting-game/**)"
     ]
   }
 }

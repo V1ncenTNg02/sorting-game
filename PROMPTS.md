@@ -797,6 +797,7 @@ Code edited:
 - backend/Dockerfile (updated CMD)
 - backend/package.json (added migrate and migrate:build scripts)
 - commit.md (Task 3 section filled in)
+- PROMPTS.md (this entry)
 
 Functionality or logic before change:
 - Schema existed only as a raw SQL file run once by Docker on a fresh volume (`database/init/01_schema.sql`). No migration tracking. No ability to apply incremental schema changes. Backend container started directly with `npm run dev`.
