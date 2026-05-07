@@ -8,6 +8,7 @@ interface Props {
   sessionId?: string | null
   onReset: () => void
   resetLabel?: string
+  isShared?: boolean
 }
 
 function formatTime(seconds: number): string {
@@ -22,6 +23,7 @@ export function WellDoneModal({
   sessionId,
   onReset,
   resetLabel = 'Play Again',
+  isShared = false,
 }: Props) {
   const [copied, setCopied] = useState(false)
   const isNewBest = bestScore !== null && elapsedSeconds < bestScore
@@ -37,8 +39,12 @@ export function WellDoneModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-xl p-10 flex flex-col items-center gap-6 max-w-sm w-full mx-4">
-        <h2 className="text-3xl font-bold text-gray-800">Well Done!</h2>
-        <p className="text-gray-500">You sorted everything in</p>
+        <h2 className="text-3xl font-bold text-gray-800">
+          {isShared ? 'Shared Result' : 'Well Done!'}
+        </h2>
+        <p className="text-gray-500">
+          {isShared ? 'Your friend sorted everything in' : 'You sorted everything in'}
+        </p>
         <span className="text-4xl font-mono font-semibold text-blue-600">
           {formatTime(elapsedSeconds)}
         </span>
@@ -62,7 +68,7 @@ export function WellDoneModal({
           >
             {resetLabel}
           </button>
-          {sessionId != null && (
+          {sessionId != null && !isShared && (
             <button
               onClick={handleShare}
               className="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"

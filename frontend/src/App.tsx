@@ -42,6 +42,7 @@ function App() {
       sessionId={sharedGame.id}
       onReset={startGame}
       resetLabel="Play Game"
+      isShared
     />
   ) : null
 

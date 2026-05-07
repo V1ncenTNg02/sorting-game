@@ -52,6 +52,33 @@ describe('WellDoneModal', () => {
     expect(screen.getByRole('button', { name: /play game/i })).toBeInTheDocument()
   })
 
+  describe('isShared', () => {
+    it('shows "Shared Result" heading when isShared is true', () => {
+      render(<WellDoneModal elapsedSeconds={60} bestScore={null} onReset={vi.fn()} isShared />)
+      expect(screen.getByRole('heading', { name: /shared result/i })).toBeInTheDocument()
+    })
+
+    it('shows "Well Done!" heading when isShared is false', () => {
+      render(<WellDoneModal elapsedSeconds={60} bestScore={null} onReset={vi.fn()} />)
+      expect(screen.getByRole('heading', { name: /well done/i })).toBeInTheDocument()
+    })
+
+    it('shows friend message when isShared is true', () => {
+      render(<WellDoneModal elapsedSeconds={60} bestScore={null} onReset={vi.fn()} isShared />)
+      expect(screen.getByText(/your friend sorted everything in/i)).toBeInTheDocument()
+    })
+
+    it('shows own message when isShared is false', () => {
+      render(<WellDoneModal elapsedSeconds={60} bestScore={null} onReset={vi.fn()} />)
+      expect(screen.getByText(/you sorted everything in/i)).toBeInTheDocument()
+    })
+
+    it('hides Share button when isShared is true even if sessionId is provided', () => {
+      render(<WellDoneModal elapsedSeconds={60} bestScore={null} sessionId="uuid-123" onReset={vi.fn()} isShared />)
+      expect(screen.queryByRole('button', { name: /share/i })).not.toBeInTheDocument()
+    })
+  })
+
   describe('Share button', () => {
     let writeText: ReturnType<typeof vi.fn>
 
