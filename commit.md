@@ -755,25 +755,27 @@ npm test -- --run    # 117/117 passed
 ## Task 9 - README
 
 Commit:
-- Pending
+- docs: write comprehensive README covering all required sections
 
 What I did:
-- TODO
+- Replaced the partial README.md (Migrations, Tests, and Tradeoffs were TODO placeholders) with a complete reference document.
+- Added Table of Contents, expanded Why This Stack section for backend choices, complete Migrations section explaining how the runner works and how to add a new migration, full Tests section with test area tables and coverage numbers, API Endpoints section with request/response body examples, Database Schema section with column-level annotations explaining design decisions, State Management section with a store fields table and state transition diagram, Architecture Overview section, and a Tradeoffs and Limitations section covering six known limitations.
 
 Decisions:
-- Documentation structure: TODO.
-- Tradeoffs and limitations included: TODO.
+- Kept the structure roughly aligned with the existing headings so the document does not feel entirely replaced; added new top-level sections where needed.
+- Used tables for API endpoints, store fields, and test areas rather than prose lists to make scanning faster.
+- Included request/response body examples for every POST and PATCH endpoint so the README works as a lightweight API reference without needing to read the source.
+- Tradeoffs and Limitations section covers six real limitations: application-enforced best-score rule (concurrency), single global best score (no user accounts), JSONB items (not normalised), dev-only Docker setup (no production build), per-device Local Storage, client-only timer, and filesystem-bound migration runner.
 
 Tradeoffs:
-- TODO
+- A comprehensive README adds maintenance overhead; any future change to the API contract, schema, or test suite should update the corresponding section.
+- Detailed request/response examples may drift from the actual Zod schemas if the API changes; the source-of-truth remains the Zod schema files.
 
 Problems encountered:
-- TODO
+- None. All information was sourced from the actual codebase and existing commit.md entries.
 
 Terminal commands used:
-```powershell
-TODO
-```
+- None. README written using Claude Code file tools only.
 
 ## Task 10 - Git Hosting
 

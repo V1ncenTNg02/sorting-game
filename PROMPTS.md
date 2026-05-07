@@ -1320,3 +1320,41 @@ Functionality or logic before change:
 
 Functionality or logic after change:
 - All debug output uses `console.log`, visible immediately in Chrome DevTools at the default log level without any filter changes.
+
+## Task 9 – README
+
+### Task: Write comprehensive README.md covering all required sections
+
+Prompts:
+```text
+Follow the instruction below and Update the readme for this repo, to make it cover necessary details, tech choices and spec, project overview, how to run the project technically, and all necessary information about this project, and make it structured, well organized, and easy to read. :
+
+Write README.md explaining:
+• How to run frontend, backend, and Docker setup
+• How to run migrations
+• How to run tests
+• API endpoints
+• Database schema
+• State management approach
+• Product behaviour
+• Why you chose your backend stack
+• Tradeoffs and limitations
+Commit required.
+```
+
+Outcome:
+- Explored the full project to verify current state of all systems before writing.
+- Replaced the partial README.md (which had TODO sections for Migrations, Tests, and Tradeoffs) with a comprehensive document covering all required areas.
+- Added a Table of Contents, expanded Why This Stack, complete Migrations section explaining runner mechanics, full Tests section with coverage numbers and test area table, complete API Endpoints with request/response examples, full Database Schema with column-level annotations, State Management section with store shape table and state transition diagram, Architecture Overview, and detailed Tradeoffs and Limitations.
+- Updated commit.md Task 9 section.
+- Output was used fully.
+
+Code edited:
+- README.md
+- commit.md
+
+Functionality or logic before change:
+- README.md existed with correct Stack, Product Behaviour, Running the Project, Docker, API Endpoints, Database Schema, State Management, and Debugging sections. Migrations, Tests, and Tradeoffs and Limitations sections were placeholder TODOs.
+
+Functionality or logic after change:
+- README.md is a complete reference document. All sections are filled with accurate, up-to-date content derived from the actual codebase. The Tradeoffs and Limitations section covers the five main known limitations of the current implementation.
