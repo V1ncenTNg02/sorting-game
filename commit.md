@@ -130,28 +130,100 @@ Get-Content .claude\settings.json | ConvertFrom-Json | Out-Null
 
 ## Task 1 - UI Only
 
-Commit:
-- Pending
+**Framework choice:**
+React + Vite + TypeScript (Vite 6 / Vitest 3). Vite 8 / Vitest 4 were initially scaffolded but are incompatible with Node 21.7.3 because rolldown (the new bundler) requires Node 22+ native bindings. Downgraded to Vite 6 + Vitest 3, which uses esbuild instead and works cleanly on Node 21.
 
-What I did:
-- TODO
+**State management choice:**
+Zustand — minimal boilerplate, TypeScript-friendly, store holds `status`, `unsortedItems`, `buckets`, and `elapsedSeconds`. All actions delegate to `GameService` and `DragDropService` classes; no game logic lives inside the store itself.
 
-Decisions:
-- Framework choice: React + TypeScript + Vite.
-- State management choice: Zustand
-- Drag-and-drop approach considered: TODO.
-- Folder structure decisions: TODO.
+**Drag-and-drop approach considered:**
+Evaluated @dnd-kit/core, react-beautiful-dnd, react-dnd, vanilla HTML5 drag events, and Framer Motion drag. Selected @dnd-kit/core because it is actively maintained, accessible by default, composable with service classes via `useDraggable`/`useDroppable` hooks, and has no HTML5 drag-event quirks.
 
-Tradeoffs:
-- TODO
-
-Problems encountered:
-- TODO
-
-Terminal commands used:
-```powershell
-TODO
+**Folder structure decisions:**
 ```
+frontend/src/
+  constants/      — SHAPES, COLOURS, BUCKET_DEFINITIONS, ITEM_COUNT (no magic values)
+  types/          — shared TypeScript literal types
+  domain/         — ShapeItem and Bucket entity classes (OOP, testable)
+  services/       — GameService and DragDropService (OOP, testable)
+  store/          — Zustand store (thin glue only)
+  components/     — one folder per component; test file co-located
+```
+Domain and service layers are kept separate from the React component tree so game logic can be tested without a DOM.
+
+**Terminal commands used:**
+```powershell
+npm create vite@latest frontend -- --template react-ts
+cd frontend
+npm install zustand @dnd-kit/core @dnd-kit/utilities
+npm install tailwindcss @tailwindcss/vite
+npm install -D vitest@^3 @vitejs/plugin-react@^4 vite@^6
+npm install -D @testing-library/react @testing-library/user-event @testing-library/jest-dom happy-dom
+npm uninstall jsdom
+npm test
+npm run build
+npm run dev
+```
+
+**Verification:**
+- `npm test` → 34/34 tests passing across 9 test files (domain, services, and component layers).
+- `npm run build` → clean production build, no TypeScript errors.
+- `npm run dev` → dev server live at localhost:5173; loading screen → idle start → game board with 12 draggable shapes + 6 droppable buckets → well-done modal on completion.
+- Drag and drop confirmed end-to-end (no validation in Task 1 — any item accepted by any bucket).
+- Timer shows static 00:00; well-done modal shows elapsed time and Play Again resets to idle state.
+
+**Problems encountered:**
+- Vite 8 + Vitest 4 crash on Node 21.7.3 with `ERR_MODULE_NOT_FOUND` for `@rolldown/binding-win32-x64-msvc` — rolldown requires Node 22+. Fixed by downgrading to Vite 6 + Vitest 3.
+- After the rolldown fix, rolldown's use of `util.styleText` with array arguments (Node 22+ only) caused another startup crash. Confirmed Vite 8/Vitest 4 are fundamentally incompatible with Node 21 — the Vite 6 downgrade resolved both.
+- jsdom@29 CJS/ESM conflict: `html-encoding-sniffer` (a jsdom dependency) requires `@exodus/bytes` which is now ESM-only, causing `ERR_REQUIRE_ESM` in the test environment. Fixed by removing jsdom and installing happy-dom, changing `environment: 'happy-dom'` in vite.config.ts.
+- `vi.mocked(require('@dnd-kit/core').useDraggable).mockReturnValueOnce` fails because the mock factory returns plain objects, not `vi.fn()` instances. Fixed by using `vi.spyOn(dndCore, 'useDraggable')` and calling `.mockReturnValueOnce` on the spy directly.
+- `tsc -b` failed on test files because tsconfig.app.json included all of `src/` but lacked vitest global types and @testing-library/jest-dom matcher types. Fixed by adding `"exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]` to tsconfig.app.json so the production build skips test files entirely.
+
+## Task 1 - UI Redesign (Reference Image Alignment)
+
+**What was done:**
+- Replaced the placeholder bucket model (separate colour-only and shape-only buckets) with 7 specific shape+colour combination buckets matching the reference image: Red Triangle, Red Square, Blue Triangle, Blue Circle, Green Triangle, Green Square, Blue Square.
+- Rewrote `Bucket` domain class: removed `kind` field, added `shape: ShapeType` and `colour: ColourType`; `accepts()` now delegates to `item.matchesBucket(shape, colour)` which requires both to match.
+- Added `matchesBucket(shape, colour)` to `ShapeItem` and an optional `position: ItemPosition` field (defaults to `{ x:0, y:0 }`).
+- Updated `DragDropService.handleDragEnd()` to validate drops: returns `DropResult` with `accepted: boolean`; rejected drops leave `updatedUnsorted` unchanged so the item snaps back automatically.
+- Made the timer functional in the Zustand store using `setInterval` at module level; timer starts on `startGame()`, increments `elapsedSeconds` every second while status is `'playing'`, stops (via `clearInterval`) on completion or reset. `resetGame()` now restarts immediately in `'playing'` state with fresh items and a fresh timer.
+- Added `bucketCounts: Record<string, number>` to the store; incremented on each accepted drop; reset on `resetGame()`.
+- Replaced all filled SVG shapes with outlined SVG shapes (`fill="none"`, coloured `stroke`).
+- Changed item layout from a 4-column grid to absolute percentage-based positioning (`left: X%`, `top: Y%`). Drag transform from `@dnd-kit` layered on top; drag release snaps items back to their original canvas position if the drop is rejected.
+- New components: `TopBar` (elapsed time, items left, reset button), `SidebarTarget` (droppable bucket row with outlined icon, label, and count badge), `GhostGrid` (faint 4×2 decorative grid in canvas bottom-right), `Footer` (bucket count, system status).
+- `GameBoard` completely rewritten: full-page flex layout with `TopBar` → sidebar + canvas → `Footer`, with `DndContext` wrapping everything.
+- Removed `BucketZone` as the active drop-target component; replaced by `SidebarTarget`. Old `Bucket.test.tsx` updated to test `SidebarTarget` instead.
+- Added `console.debug` logging for drag events, drop validation result, and game state changes (satisfies the debugging requirement).
+
+**Decisions made:**
+- Buckets as shape+colour combos rather than separate categories is both closer to the coding test requirement and matches the reference image exactly.
+- `accepted: boolean` returned inside `DropResult` rather than returning `null` for rejection, so the store always gets a full result and can distinguish "no target found" (null) from "wrong target" (accepted: false).
+- `resetGame()` restarts directly into `'playing'` state rather than going back to `'idle'`, matching the reference image's inline Reset button behaviour.
+- `bucketCounts` stored as `Record<string, number>` in the Zustand store rather than mutable state on the `Bucket` class, keeping `Bucket` immutable and avoiding stale-closure bugs.
+- Percentage-based absolute positions defined in `ITEM_POSITIONS` constant rather than computed at runtime, so positions are deterministic and reproducible across resets.
+
+**Tradeoffs:**
+- Defining 15 fixed item positions in constants means the layout is not random between resets; items always start at the same positions. This is acceptable for a coding test and avoids layout shift.
+- `setInterval` is stored at module level outside the Zustand store creator to avoid Zustand's shallow-diff triggering spurious re-renders; the tradeoff is that the timer is a singleton and not directly testable from unit tests. The store's tick logic (`elapsedSeconds + 1` only when status is `'playing'`) is still safe.
+- SidebarTarget rows are the drop zones, so the droppable area is small (the row height). If the user drops a shape close to a row but not precisely over it, the drop is missed. Acceptable given the test requirements don't specify precision targets.
+
+**Problems encountered:**
+- Old `Bucket.test.tsx` still instantiated `Bucket` with the old three-argument constructor `(id, kind, label)`. With the new four-argument constructor `(id, shape, colour, label)`, the label defaulted to `undefined` and the span was empty, causing two test failures. Fixed by updating the test to construct valid `Bucket` objects and test `SidebarTarget` instead of the now-removed `BucketZone`.
+- `GameBoard.test.tsx` used `screen.getByLabelText('red circle')` but both the `SidebarTarget` icon (18px) and the `ShapeCard` icon (46px) render an SVG with `aria-label="red circle"`, causing "Found multiple elements" error. Fixed by switching to `screen.getAllByLabelText('red circle').length > 0`.
+
+**Terminal commands used:**
+```powershell
+npm test   # frontend — run after each batch of changes
+npm run build
+```
+
+**Verification:**
+- `npm test` → 54/54 tests passing across 11 test files.
+- `npm run build` → clean production build, no TypeScript errors.
+- Dev server live at localhost:5173; layout matches reference image: top bar with live timer and items-left counter, narrow sidebar with 7 droppable target rows, scattered outlined shapes on the canvas, ghost grid in bottom-right, footer with bucket count and system status.
+- Correct drops remove item from board and increment the bucket count badge; wrong drops snap item back to original position.
+- Timer counts up from 00:00 once Start Game is clicked; stops when all 15 items are sorted.
+- Reset button restarts the game immediately with a fresh set of 15 items and a reset timer.
 
 ## Task 2 - Docker Setup
 

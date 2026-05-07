@@ -501,3 +501,183 @@ Functionality or logic after change:
 - CLAUDE.md mandates Clean Code + OOP across all TypeScript code on both frontend and backend, with specific rules for each layer.
 - The workflow now requires running /oop-reviewer before each commit to verify compliance.
 - The OOP-reviewer skill reads changed files, applies a structured checklist, produces a PASS/FAIL report with file paths and line numbers, and blocks the commit until all violations are resolved.
+
+## Task 1 — UI Only (No API)
+
+### Task: Plan and clarify Task 1 — UI only frontend
+
+Prompts:
+```text
+UNIFY SERVICES DEV TEST... here is the full text of the requirement, plan for the task one and ask me any clarifying questions one by one
+```
+
+```text
+Give me top five options and the pros and cons of them, And also how well they work with the react Vite and typeScript
+```
+
+```text
+include the dnd-kit and react beautiful dnd, compare them with the options you provided
+```
+
+Outcome:
+- Compared DnD library options including @dnd-kit/core, react-beautiful-dnd, react-dnd, dnd-kit full, and others with pros/cons for React + Vite + TypeScript.
+- Decided on @dnd-kit/core as the DnD library — modern, accessible, no HTML5 quirks, composable with service classes.
+- Decided on Tailwind CSS v4 (via @tailwindcss/vite) for styling — no config file needed.
+- Entered plan mode; produced a full implementation plan with folder structure, domain/service class interfaces, Zustand store schema, UI layout, and TDD implementation steps.
+- Plan approved by user.
+
+Code edited:
+- None.
+
+Functionality or logic before change:
+- No frontend code existed.
+
+Functionality or logic after change:
+- No code changed. The full Task 1 plan was finalised and approved.
+
+### Task: Scaffold frontend and implement domain + service layer with TDD
+
+Prompts:
+```text
+[Plan approved — implementation began automatically from the approved plan]
+```
+
+Outcome:
+- Scaffolded the Vite 6 + React + TypeScript frontend (downgraded from Vite 8 + Vitest 4 because Node 21.7.3 is incompatible with rolldown native bindings required by Vite 8/Vitest 4).
+- Switched test environment from jsdom to happy-dom due to a CJS/ESM conflict in jsdom@29 on Node 21.
+- Implemented constants, types, domain classes (ShapeItem, Bucket), and service classes (GameService, DragDropService) following strict TDD (red-green-refactor) and OOP rules.
+- 22/22 tests passing across 4 test files after service layer was complete.
+- Output was used fully.
+
+Code edited:
+- frontend/package.json
+- frontend/vite.config.ts
+- frontend/vitest.setup.ts
+- frontend/src/index.css
+- frontend/src/types/game.types.ts
+- frontend/src/constants/game.constants.ts
+- frontend/src/domain/ShapeItem.ts
+- frontend/src/domain/ShapeItem.test.ts
+- frontend/src/domain/Bucket.ts
+- frontend/src/domain/Bucket.test.ts
+- frontend/src/services/GameService.ts
+- frontend/src/services/GameService.test.ts
+- frontend/src/services/DragDropService.ts
+- frontend/src/services/DragDropService.test.ts
+
+Functionality or logic before change:
+- No frontend application code existed.
+
+Functionality or logic after change:
+- Domain and service layers fully implemented and tested.
+- ShapeItem entity: holds id, shape, colour; has matchesColourBucket and matchesShapeBucket methods.
+- Bucket entity: holds id, kind, label; has accepts(item) method delegating to ShapeItem matchers.
+- GameService: generates 12 items (all 9 combos + 3 extras) and 6 buckets (3 colour + 3 shape); checks completion by empty unsorted list.
+- DragDropService: handleDragEnd extracts active/over ids, removes dropped item from unsorted list, returns DropResult or null.
+
+### Task: Build Zustand store and all UI components with TDD
+
+Prompts:
+```text
+[Continued from previous session — implementation resumed from in_progress Zustand store task]
+```
+
+Outcome:
+- Created the Zustand store (useGameStore) with status, unsortedItems, buckets, elapsedSeconds; actions delegate to GameService and DragDropService, no logic inside the store.
+- Built all 8 components: ShapeIcon (SVG renderer), LoadingScreen (spinner), Timer (MM:SS formatter), ShapeCard (useDraggable wrapper), BucketZone (useDroppable wrapper), UnsortedArea (grid + empty state), WellDoneModal (overlay with time + Play Again), GameBoard (DndContext root with sidebar buckets and unsorted area).
+- Wrote TDD tests for ShapeCard, BucketZone, UnsortedArea, WellDoneModal, and GameBoard; fixed mock pattern from vi.mocked(require(...)) to vi.spyOn for @dnd-kit/core hooks.
+- Excluded test files from tsconfig.app.json to fix tsc -b build errors from test-only types.
+- Built App component as a status-driven screen router: loading → idle → playing/complete.
+- 34/34 tests passing; clean production build; dev server live at localhost:5173.
+- Output was used fully.
+
+Code edited:
+- frontend/src/store/useGameStore.ts
+- frontend/src/components/ShapeIcon/ShapeIcon.tsx
+- frontend/src/components/LoadingScreen/LoadingScreen.tsx
+- frontend/src/components/Timer/Timer.tsx
+- frontend/src/components/ShapeCard/ShapeCard.tsx
+- frontend/src/components/ShapeCard/ShapeCard.test.tsx
+- frontend/src/components/Bucket/BucketZone.tsx
+- frontend/src/components/Bucket/Bucket.test.tsx
+- frontend/src/components/UnsortedArea/UnsortedArea.tsx
+- frontend/src/components/UnsortedArea/UnsortedArea.test.tsx
+- frontend/src/components/WellDoneModal/WellDoneModal.tsx
+- frontend/src/components/WellDoneModal/WellDoneModal.test.tsx
+- frontend/src/components/GameBoard/GameBoard.tsx
+- frontend/src/components/GameBoard/GameBoard.test.tsx
+- frontend/src/App.tsx
+- frontend/tsconfig.app.json
+
+Functionality or logic before change:
+- Domain and service layer complete with 22 tests passing. No UI components existed. App.tsx was the Vite scaffold default.
+
+Functionality or logic after change:
+- Full UI-only game is functional: loading screen → idle start screen → game board with 12 draggable shapes and 6 droppable buckets → well-done modal when all items sorted.
+- Drag and drop wired end-to-end (no validation in Task 1 — any item accepted by any bucket).
+- Timer shows static 00:00. Well-done modal shows elapsed time and a Play Again button that resets to idle.
+- 34/34 tests passing; production build clean.
+
+### Task: Redesign frontend layout, logic, and visuals to match reference image
+
+Prompts:
+```text
+Refer to the image and the instructions below, to revise the layout and logic of the frontend: Build a colour-and-shape sorting game based on the attached reference image.
+
+Overall layout: Full-page game screen with a very light grey or white background. Minimal top bar across the full width. Narrow left sidebar for drop targets. Large main play area for unsorted draggable items. Thin footer/status bar at the bottom.
+
+Top bar: Left side shows Time and Items Left. Right side shows Reset action.
+
+Left sidebar: Title DROP TARGETS. Vertical list of target buckets. Each row: small outlined shape icon in correct color, label text, small circular badge showing count for that target.
+
+Main play area: Title Unsorted Items. Subtitle instruction text. Large open canvas area. Scatter draggable outlined shapes around the canvas with lots of whitespace. In the lower-right area, include a faint ghosted bucket/grid hint.
+
+Footer: 6 BUCKETS ACTIVE on left. Small green status indicator, System Ready, v1.2.0 on right.
+
+Game logic: Buckets defined by shape + color combinations. Correct drop removes item from unsorted, increments bucket count, decrements items-left. Wrong drop returns item to original position. Timer starts when game starts and stops on completion. Reset restores all items, resets timer. Visual-only states remain separate from core game state. Use outlined shapes not filled shapes.
+```
+
+Outcome:
+- Completely redesigned the frontend layout, logic, and visual style to match the reference image.
+- Buckets changed from separate colour/shape categories to 7 specific shape+colour combination targets (Red Triangle, Red Square, Blue Triangle, Blue Circle, Green Triangle, Green Square, Blue Square).
+- Drop validation now requires both shape and colour to match the target bucket; wrong drops snap back automatically.
+- Timer is now functional — starts on game start, ticks every second, stops on completion.
+- All shapes changed from filled SVGs to outlined SVGs (stroke-only, no fill).
+- Items changed from grid layout to scattered absolute positioning with percentage-based coordinates.
+- New components created: TopBar, SidebarTarget, GhostGrid, Footer.
+- 54/54 tests passing after updates; clean production build.
+- Output was used fully.
+
+Code edited:
+- frontend/src/types/game.types.ts
+- frontend/src/constants/game.constants.ts
+- frontend/src/domain/ShapeItem.ts
+- frontend/src/domain/ShapeItem.test.ts
+- frontend/src/domain/Bucket.ts
+- frontend/src/domain/Bucket.test.ts
+- frontend/src/services/GameService.ts
+- frontend/src/services/GameService.test.ts
+- frontend/src/services/DragDropService.ts
+- frontend/src/services/DragDropService.test.ts
+- frontend/src/store/useGameStore.ts
+- frontend/src/components/ShapeIcon/ShapeIcon.tsx
+- frontend/src/components/ShapeCard/ShapeCard.tsx
+- frontend/src/components/ShapeCard/ShapeCard.test.tsx
+- frontend/src/components/Bucket/Bucket.test.tsx
+- frontend/src/components/UnsortedArea/UnsortedArea.tsx
+- frontend/src/components/UnsortedArea/UnsortedArea.test.tsx
+- frontend/src/components/GameBoard/GameBoard.tsx
+- frontend/src/components/GameBoard/GameBoard.test.tsx
+- frontend/src/components/TopBar/TopBar.tsx (new)
+- frontend/src/components/TopBar/TopBar.test.tsx (new)
+- frontend/src/components/SidebarTarget/SidebarTarget.tsx (new)
+- frontend/src/components/SidebarTarget/SidebarTarget.test.tsx (new)
+- frontend/src/components/GhostGrid/GhostGrid.tsx (new)
+- frontend/src/components/Footer/Footer.tsx (new)
+- frontend/src/App.tsx
+
+Functionality or logic before change:
+- Buckets were separate colour-only and shape-only categories (6 buckets total). Any item was accepted by any bucket (no validation). Timer showed static 00:00. Shapes were filled SVGs. Items were arranged in a 4-column grid. Layout had a two-column board with colour and shape sections in the sidebar.
+
+Functionality or logic after change:
+- Buckets are 7 shape+colour combinations listed in a narrow sidebar as droppable target rows. Drop validation requires exact shape and colour match; wrong drops return item to board. Timer ticks every second from game start and stops on completion. Shapes are outlined SVGs (stroke only). Items are scattered at fixed percentage positions across the canvas. Layout matches the reference image: top bar (time/items-left/reset), sidebar (drop targets with count badges), main board (heading, instruction, canvas with scattered items and ghost grid), footer (bucket count, system status). 54/54 tests passing.

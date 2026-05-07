@@ -2,7 +2,15 @@
   "permissions": {
     "allow": [
       "Bash(python -m json.tool)",
-      "Bash(python -m json.tool .claude/settings.json)"
+      "Bash(python -m json.tool .claude/settings.json)",
+      "PowerShell(Get-ChildItem -Path \"e:\\\\GitProject\\\\sorting-game\" -Recurse -Force | Select-Object -Property FullName | ForEach-Object { $_.FullName.Replace\\(\"e:\\\\GitProject\\\\sorting-game\\\\\", \"\"\\).Replace\\(\"e:\\\\GitProject\\\\sorting-game\", \"\"\\) } | Sort-Object)",
+      "Bash(npm create *)",
+      "Bash(npm install *)",
+      "Bash(npm test *)",
+      "Bash(Remove-Item -Recurse -Force node_modules, package-lock.json -ErrorAction SilentlyContinue)",
+      "Bash(npm remove *)",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)"
     ]
   }
 }
