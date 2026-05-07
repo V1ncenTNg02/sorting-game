@@ -435,24 +435,53 @@ npm test
 ## Task 5 - Frontend API Integration
 
 Commit:
-- Pending
+- feat: connect frontend to backend API with session management and score sync
 
-What I did:
-- TODO
+**What was done:**
+- Created `frontend/src/services/ApiService.ts` — an OOP class implementing `IApiService` that wraps all HTTP calls using relative paths (`/api/...`). The Vite proxy in `vite.config.ts` already routes `/api` to the backend container, so no new env var was needed.
+- Added `IApiService` interface in `ApiService.ts` so the store depends on the abstraction, not the concrete class.
+- Extended `frontend/src/types/game.types.ts` with `ApiScore`, `ApiGame`, `ApiGameItem`, `SubmitScoreResponse` types to match the backend contract precisely.
+- Extended `useGameStore` with two new state fields (`sessionId: string | null`, `bestScore: number | null`) and three new async actions (`loadBestScore`, `startGame` now async, `resetGame` fires API call).
+- Extracted `handleGameCompletion(elapsedSeconds)` as a non-exported module-level async function (not in the store's public interface) — called via `void handleGameCompletion(...)` inside `handleDragEnd`'s synchronous `set(fn)` callback; this is the required pattern because Zustand's `set(fn)` is synchronous and cannot `await` inside the callback.
+- Updated `App.tsx` to call `loadBestScore()` once on mount via `useEffect`, during the existing 600ms loading window.
+- Updated `WellDoneModal.tsx` to accept `bestScore: number | null` and display a Best Score row with a "New best!" label when the current run is faster.
+- Wrote 15 unit tests for `ApiService` using `vi.stubGlobal('fetch', ...)` with no MSW; all pass.
+- Updated `WellDoneModal.test.tsx` with 5 new test cases covering best score display and the "New best!" label logic.
+- OOP reviewer flagged 2 violations before commit, both fixed: `ApiService` missing `IApiService` interface; `_completeGame` in the public `GameStore` interface.
 
-Decisions:
-- API call structure: TODO.
-- Frontend/backend state sync: TODO.
+**How API calls are structured:**
+- `ApiService` is a class with four public methods: `getBestScore`, `createGame`, `completeGame`, `submitScore`. Each delegates to a private HTTP helper (`get`, `post`, `patch`) that uses the native `fetch` API with relative paths.
+- All successful responses call `console.debug('[Api] ...')` to satisfy the CLAUDE.md debug output requirement.
+- `getBestScore` returns `null` on any failure (404, network error, 5xx) — graceful degradation.
+- `createGame`, `completeGame`, `submitScore` throw on non-2xx; callers catch and log without blocking gameplay.
 
-Tradeoffs:
-- TODO
+**How state syncs with backend:**
+1. App mount → `loadBestScore()` → `GET /api/best-score` → store `bestScore` in seconds (converted from ms at the API boundary: `Math.round(score.value / 1000)`).
+2. `startGame()` → initialises game state synchronously (UI transitions immediately to `'playing'`) → `POST /api/games` → stores returned UUID as `sessionId`.
+3. `handleDragEnd` detects completion → `void handleGameCompletion(elapsedSeconds)` fires async:
+   - `PATCH /api/games/:sessionId` with `{ duration_ms, completed: true, items }`
+   - `POST /api/best-score` with `{ value: durationMs }`; if accepted, updates `bestScore` in store.
+4. `resetGame()` → resets `sessionId: null` → fires `POST /api/games` to create a new session.
 
-Problems encountered:
-- TODO
+**Any issues with data flow:**
+- Zustand's `set(fn)` callback is synchronous; async side effects on completion cannot be `await`-ed inside it. Resolved by extracting `handleGameCompletion` as a non-exported module-level async function and calling it with `void` after the synchronous state update.
+- Race condition: if `createGame` is still pending when the user finishes the game, `sessionId` is `null` — the PATCH step is skipped but the score is still submitted. This is intentional graceful degradation; the session is simply not patched, which is acceptable for a coding test.
+- `bestScore` is stored in seconds (matching `elapsedSeconds`) to keep the WellDoneModal comparison simple. Conversion from ms to seconds happens at the store boundary.
 
-Terminal commands used:
+**Tradeoffs:**
+- Relative API paths + Vite proxy: works transparently in Docker (proxy to `http://backend:3000`) and locally (proxy to `http://localhost:3000`). Tradeoff: the frontend cannot call the API directly without the Vite dev server (e.g., in a pure static CDN deployment). Acceptable for this project.
+- `bestScore` updated after score submission resolves: the WellDoneModal renders first with the old best score, then optionally updates once the API responds. Avoids delaying the modal render on an API round-trip.
+- `handleGameCompletion` as a module-level function rather than a store action: keeps the `GameStore` interface clean (no internal methods exposed). Tradeoff: the function is technically a non-class function containing domain-level API orchestration. Acceptable because it is not exported and is encapsulated to the store module.
+
+**Problems encountered:**
+- `_completeGame` was initially added to the `GameStore` interface, exposing an internal method to any component. Fixed before commit: extracted as non-exported `handleGameCompletion` function.
+- `ApiService` was initially missing the `IApiService` interface. Fixed before commit: interface added in the same file, store uses `IApiService` type.
+
+**Terminal commands used:**
 ```powershell
-TODO
+cd frontend
+npx vitest run src/services/ApiService.test.ts   # verify 15 ApiService tests pass
+npx vitest run                                   # verify all 74 tests pass (12 test files)
 ```
 
 ## Task 6 - Game Logic and Local Storage

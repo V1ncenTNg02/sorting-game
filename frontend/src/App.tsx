@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useGameStore } from './store/useGameStore'
 import { LoadingScreen } from './components/LoadingScreen/LoadingScreen'
 import { GameBoard } from './components/GameBoard/GameBoard'
@@ -9,9 +10,15 @@ function App() {
   const buckets       = useGameStore(s => s.buckets)
   const bucketCounts  = useGameStore(s => s.bucketCounts)
   const elapsedSeconds = useGameStore(s => s.elapsedSeconds)
+  const bestScore     = useGameStore(s => s.bestScore)
+  const loadBestScore = useGameStore(s => s.loadBestScore)
   const startGame     = useGameStore(s => s.startGame)
   const handleDragEnd = useGameStore(s => s.handleDragEnd)
   const resetGame     = useGameStore(s => s.resetGame)
+
+  useEffect(() => {
+    void loadBestScore()
+  }, [loadBestScore])
 
   if (status === 'loading') {
     return <LoadingScreen />
@@ -45,7 +52,7 @@ function App() {
         onReset={resetGame}
       />
       {status === 'complete' && (
-        <WellDoneModal elapsedSeconds={elapsedSeconds} onReset={resetGame} />
+        <WellDoneModal elapsedSeconds={elapsedSeconds} bestScore={bestScore} onReset={resetGame} />
       )}
     </>
   )

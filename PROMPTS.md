@@ -908,3 +908,56 @@ Functionality or logic after change:
 - `DELETE /api/games/:id` deletes game, returns 204 or 404.
 - Global error handler catches async exceptions and returns 500 JSON.
 - 27 Jest tests passing covering all required backend scenarios.
+
+## Task 5 — Frontend API Integration
+
+### Task: Plan and implement frontend API integration
+
+Prompts:
+```text
+write a plan for the fifth task, wait for me to review, and implement it once I confirm. Requirements are as below: 5) Frontend + API Integration
+Connect the frontend to the backend:
+• Load best score on app start
+• Create a game session on start
+• Update game on completion
+• Submit best score if applicable
+Commit required.
+In commit.md include:
+• How API calls are structured
+• How state syncs with backend
+• Any issues with data flow
+• Terminal commands used
+```
+
+Outcome:
+- Explored the full frontend (Zustand store, all components, no existing API calls) and backend (all 8 endpoints, request/response shapes, Zod validation, Vite proxy already configured at `/api`).
+- Produced an implementation plan covering: new `ApiService` class, `IApiService` interface, store extensions (`sessionId`, `bestScore`), async `startGame`, `handleGameCompletion` module function, `loadBestScore` action, `App.tsx` `useEffect`, `WellDoneModal` best-score display, and test plan.
+- Plan reviewed and approved by user; implementation proceeded.
+- Created `ApiService.ts` with `IApiService` interface and 4 public methods using relative fetch paths.
+- Extended `useGameStore` with 2 new state fields, 3 new/changed actions, and the `handleGameCompletion` module-level function.
+- Updated `App.tsx` and `WellDoneModal.tsx` as thin UI changes.
+- OOP reviewer ran before commit: 2 violations found and fixed (`IApiService` missing; `_completeGame` in public interface).
+- 74/74 tests passing across 12 test files.
+- Output was used fully.
+
+Code edited:
+- frontend/src/types/game.types.ts
+- frontend/src/services/ApiService.ts (new)
+- frontend/src/services/ApiService.test.ts (new)
+- frontend/src/store/useGameStore.ts
+- frontend/src/App.tsx
+- frontend/src/components/WellDoneModal/WellDoneModal.tsx
+- frontend/src/components/WellDoneModal/WellDoneModal.test.tsx
+- commit.md
+- PROMPTS.md
+
+Functionality or logic before change:
+- The game was fully playable but entirely client-side. No API calls existed. `bestScore` and `sessionId` were not tracked. The WellDoneModal showed only elapsed time with no comparison to a best score.
+
+Functionality or logic after change:
+- On app mount, `GET /api/best-score` is called; the result is stored as `bestScore` (in seconds) in the Zustand store and shown in the WellDoneModal.
+- On game start, `POST /api/games` creates a backend session; the returned UUID is stored as `sessionId`.
+- On game completion, `PATCH /api/games/:sessionId` marks the session complete with duration, then `POST /api/best-score` submits the score; if accepted (new best), `bestScore` in the store is updated.
+- The WellDoneModal shows a "Best Score" row and a "New best!" label when applicable.
+- All API calls degrade gracefully on failure (null best score, no session ID, skipped PATCH/score); the game continues working offline.
+- 74/74 tests passing.

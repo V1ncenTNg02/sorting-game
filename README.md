@@ -99,17 +99,20 @@ TODO
 
 ## API Endpoints
 
-`GET /health` is live. Remaining endpoints are planned for Task 4.
+All endpoints are live.
 
-Expected endpoints:
-- `GET /health`
-- `GET /api/best-score`
-- `POST /api/best-score`
-- `GET /api/games`
-- `POST /api/games`
-- `GET /api/games/:id`
-- `PATCH /api/games/:id`
-- `DELETE /api/games/:id`
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Returns `"OK"` (200) or 500 if DB is unreachable |
+| `GET` | `/api/best-score` | Returns the lowest recorded score or 404 if none |
+| `POST` | `/api/best-score` | Submits a score; accepted only if lower than current best |
+| `GET` | `/api/games` | Lists all game sessions ordered by created date |
+| `POST` | `/api/games` | Creates a new game session; returns 201 with UUID |
+| `GET` | `/api/games/:id` | Returns a single game session or 404 |
+| `PATCH` | `/api/games/:id` | Partially updates a game (items, duration_ms, completed) |
+| `DELETE` | `/api/games/:id` | Deletes a game session; returns 204 |
+
+**Score rule:** `POST /api/best-score` only stores a score if its `value` (ms) is lower than the current best. It returns `{ accepted: true, score }` or `{ accepted: false, reason }`.
 
 ## Database Schema
 
@@ -123,20 +126,27 @@ games  (id UUID PK, items JSONB, duration_ms INTEGER, completed BOOLEAN, created
 ## State Management
 
 Zustand store (`frontend/src/store/useGameStore.ts`) holds all core game truth:
-- `status` — idle / playing / complete
-- `unsortedItems` — items not yet sorted
-- `buckets` — bucket definitions and assignments
-- `elapsedSeconds` — timer
-- `bestScore` — fetched from backend
-- `sessionId` — current game session
+- `status` — `'loading' | 'idle' | 'playing' | 'complete'`
+- `unsortedItems` — items not yet correctly sorted
+- `buckets` — bucket definitions
+- `bucketCounts` — per-bucket accepted drop count
+- `elapsedSeconds` — timer (increments while `status === 'playing'`)
+- `bestScore` — best completion time in seconds, loaded from `GET /api/best-score` on mount; `null` if none or API unavailable
+- `sessionId` — UUID of the current game session from `POST /api/games`; `null` until the API responds
 
 Short-lived visual state (hover, animation flags) is kept local to components.
 
 ## Debugging
 
-TODO
+The browser console exposes debug output for all key events:
 
-Debug screenshots should be stored in `docs/`.
+| Prefix | Event |
+|--------|-------|
+| `[Api]` | API response (best-score load, game create/complete, score submission) |
+| `[Game]` | Game state changes (start, completion, reset, session create, score result) |
+| `[DragDrop]` | Dragged item details and drop validation result |
+
+Debug screenshots are stored in `docs/`.
 
 ## Tradeoffs and Limitations
 
